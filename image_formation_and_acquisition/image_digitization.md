@@ -61,6 +61,8 @@ how does a pixel get the other colors?
 why do we use twixe as many green pixels?
 - this better matches how humans perceive colors (perceived brightness is more dependant on the green)
 
-
+This approach has a disadvantage
+- the spacial resolution of the color sensor is less than the resolution of a grayscale sensor
+- i don't have 3*W*H pixels because many of them are obtained through interpolation 
 
 
