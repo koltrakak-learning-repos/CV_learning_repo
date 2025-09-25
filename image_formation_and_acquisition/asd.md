@@ -186,6 +186,7 @@ NB: dire che il vanishing point è il punto in cui tutto le linee parallele conv
 
 ### lenses
 A scene point is **on focus** when all its light rays gathered by the camera hit the image plane at the same point.
+- if this doesn't happen (the rays from a point get spread in an area of the image plane) the image gets blurry
 - In a pinhole device this happens to all scene points because of the very small size of the hole (che lascia passare un singolo raggio per punto)
     - In other terms, the pinhole camera features an infinite **Depth of Field (DOF)**
 
@@ -201,6 +202,7 @@ Tuttavia, can we use a pinhole camera in real life?
 - That in turn means that we could only capture static scenes otherwise we would get **motion blur**
 
 Therefore, cameras rely on **lenses** to gather more light from a scene point and focus it on a single image point.
+- the lense captures many light rays from a point and converges them towards a single point
 - This enables much smaller exposure times, as required, e.g., to avoid motion blur in dynamic scenes.
 - However, with lenses, **the DOF is no longer infinite**
     - only points across a limited range of distances can be simultaneously on focus in a given image.
@@ -212,6 +214,57 @@ In summary:
 - usiamo le lenti per ottenere abbastanza luce e quindi per catturare anche scene dinamiche
 - così facendo però, perdiamo la infinte DOF
 
+### how do we geometrically model a lense?
+we can approximate the lense system of a camera (which can be complex) as a single thin lense. That is, we use the thin lense model.
+
+we'll see that we can still use perspective projection even with this thin lense model.
+
+- focal point is important because all rays parallel to the optical axis, go through this point
+- object distance
+- image distance
+
+**thin lense equation**
+- 
+
+how do we determine the image point of the scene point?
+- we just need 2 lines to get an intersection
+    - usiamo due linee speciali quella parallela all'optical axis, e quella che tira dritto verso l'optical centre
+
+Dov possiamo mettere l'image plane affinchè l'immagine sia on focus?
+- l'unica possibilità è metterla a distanza v
+
+NB: se l'immagine è on focus, abbiamo lo stesso modello di prima.
+- il pinhole diventa il centro della lente
+- possiamo continuare ad usare perspective projection
+- abbiamo una terminologia un po' diversa (es. v viene anche detta effective focal length)
+
+If the image is out of focus, perspective projection doesn't apply. But this case doesn't concern us (we must make sure that we work with focused images)
+
+### circles of confusion
+...
+
+notiamo che con questo modello sembra che le uniche scene che possiamo catturare in maniera non sfocata siano quella ad una distanza ben precisa. Possiamo catturare solo un piano?
+
+no! As long as the circle of confusion is smaller than the pixel size we don't perceive the blurring effect 
+- the DOF is the range of distances where this is true
+- what happens if we increase the resolution?
+
+What if the DOF is not good enough?
+
+we use a diaphram, a mechanism which makes the lense larger or smaller by covering it
+- this doesn't change the effective focal lenght, but it makes the circles of confusion smaller
+- this way we capture less light, and so we need longer exposure times, and this make it harder to capture dynamic scenes without motion blur
+- to counteract this we can add more light through a flash on the camera, or more light on the scene
+- by closing the diaphram we gain DOF but we lose brightness e viceversa
+
+we can also use a focusing mechanism
+- this canghes the image length
+- by increasing the image distance, the object distance decreases, e viceversa
+- this can be manual or automatic
+    - a sua volta, l'autofocus può essere passive or active
+    - attivo significa che usiamo un sensore aggiuntivo (laser, sonar) per ottenere una misura della distanza dell'oggetto da mettere a fuoco con cui regolare l'image length 
+        - veloce
+    - passiva significa che non si usa alcun sensore, piuttosto si fanno tanti tentativi e si computa qual'è quello più a fuoco (con una convoluzione?)
 
 
 
@@ -228,4 +281,4 @@ In summary:
 
 
 
-### Image digitazion process
+
