@@ -172,6 +172,7 @@ considerazioni preliminari:
 The images of parallel 3D lines (che non sono più parallele in Perspective projectino) meet at a point, which is referred to as vanishing point.
 
 The vanishing point of a 3D line is the image of the point at the infinity of the line (i.e. the image of the point on the line which is infinitely distant from the optical centre).
+- il vanishing point è un image point
 - linee 3d infinte non parallele all'image plane terminano in un punto infinitamente distante
 - As such, it can be determined by the intersection between the image plane and the line parallel to the given one and passing through the optical centre. 
     - copia la linea 3d, falla passare per l'optical centre, e vedi dove interseca il piano dell'image plane

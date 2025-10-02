@@ -58,11 +58,63 @@ there are
 how does a pixel get the other colors?
 - by neighbouring pixels through interpolation
 
-why do we use twixe as many green pixels?
+why do we use twice as many green pixels?
 - this better matches how humans perceive colors (perceived brightness is more dependant on the green)
 
 This approach has a disadvantage
 - the spacial resolution of the color sensor is less than the resolution of a grayscale sensor
 - i don't have 3*W*H pixels because many of them are obtained through interpolation 
+
+
+
+### Colour spaces
+cameras capture images in this colour space???
+
+HSI colour space
+- intensità = altezza
+- hue = angolo
+- saturation = distanza dal centro
+
+RGB è un entangled colour scheme; HSI è detangled; dove quello che entagled sono le informazioni riguardanti il colore (cromaticità) con l'intensità
+- HSI è più comodo per i nostri scopi in quanto detangled
+- potrebbe quindi essere necessario trasformare l'immagine catturata dalla camera (RGB) in un altro colour space
+
+RGB e HSI sono dei colour space in cui le distanze tra colori non corrispondono a quanto i colori si assomigliano effettivamente
+- se ho tre colori c1, c2, c3, e c1-c2 è una distanza uguale a c1-c3 non è detto che c2 sia percepito tanto simile a c1 quanto c3 o viceversa
+
+Lab colour space ha questa proprietà invece
+
+Conclusione
+- don't always stick to RGB
+- quando l'applicazione ha a che fare con i colori, potrebbe essere utile considerare altri colour spaces dato che alcune caratteristiche che si stanno cercando potrebbe rivelarsi più chiaramente rispetto ad RGB
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
