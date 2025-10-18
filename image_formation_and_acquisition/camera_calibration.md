@@ -159,59 +159,155 @@ finding a solution to an overconstrained system of linear equations that minimiz
 
 with the DLT algorythm we estimate one homograpyh per calibration image
 
-con ogni immagine minimizziamo la norma di ||A * h||
+nello stimare ogni omografia minimizziamo l'errore algebrico, ovvero la norma di ||A * h||
 
 - questo vettore non ha un'interpretazione immediata
-- viene detto algebraic error
 
 Quello che vogliamo è ottenere una buona stima dell'omografia
 
-- dato un punto 3d, applicando l'omografia vogliamo ottnere un punto 2d molto vicino a quello 2d corrispondente
+- dato un punto 3d, applicando l'omografia vogliamo ottenere un punto 2d molto vicino a quello del control point corrispondente
+- Ma minimizzando ||Ah|| stiamo minimizzando qualcosa che non sembra direttamente correlato
 
-Ma minimizzando A*h stiamo minimizzanso qualcosa che non sembra correlato
+**Minimzzando l'errore algebrico non otteniamo una buona omografia**
 
-minimzzando l'errore algebrico non otteniamo una buona omografia
+Quello che vogliamo minimizzare realmente è la norma del vettore distanza tra control point e punto nell'immagine ottenuto applicando l'omografia stimata h* **per tutti i corner della calibration image**
 
-piuttosto vogliamo minimizzare la norma del vettore distanza tra corner nell'immagine e corner nell'immagine ottenuto da H*w, per tutti i corner
+- questo viene chiamato **reprojection error** (detto anche geometric error), ed è questo che vorremmo minimizzare
+- The rationale is that the “best” homography would predict with the best accuracy the positions of the corner features actually found in the image.
+
+![reprojection error](./img/reprojection_error.png)
+
+Quello che facciamo minimizzando l'algebraic error è calcolare una stima iniziale dell'omografia che raffiniamo adesso minimizzando il reprojection error
 
 **why don't we do this directly?**
 
-- why do we do first linearly estimate the homography
-- and only after the obtaing a first rough homography, we can apply a refinement that more closely matches our intuiton of calibration
-- because the cost function is not convex, we have many bad local minimums that we may and up in if we start from an unlucky starting point
-- the first estimation gives us a good starting point that allows to reach a global optimum (?) with the refinement
+- why do we do first linearly estimate the homography and only after the obtaing a first rough homography, we apply a refinement that more closely matches our intuiton of calibration?
+- because this is a **non linear optimization problem**
+  - the cost function (reprojection error) is not convex, we have many bad local minimums that we may and up in if we start from an unlucky starting point
+  - we use techniques similar to gradient descent
+- the first estimation gives us a good starting point that allows to reach a convergence close to the global optimum with the refinement
 
-we minimize the error with an algorythm that is mix between gradient descent and newton something
+Ricorda poi che per ogni calibration image otteniamo un omografia, e quindi per ogni omografia va effettuato questo passo di raffinamento
 
-### Estimating the intrinsic parameters [di nuovo crazy 11:00]
+# Estimating the intrinsic parameters
 
-Now we have estimated homographies, but our goal was estimating intrinsic parameters. Those homographies allow use to do that
+Now we have estimated homographies, but our goal was estimating intrinsic parameters. Putting toggether all these (refined) homographies allows use to do that.
 
-...
+- Dentro alle omografia, da qualche parte, i parametri intrinseci ci sono dato che per definizione, l'omografia è il prodotto tra parametri intrinseci ed estrinseci
+- we need to disentangle the intrinsic parameter
 
-exploiting the properties of the rotation matrix, we come up with 2 equations that factor out the extrinsic parameters
+ricordiamoci che una PPM può essere fattorizzata come
 
-knowing B is the same as knowing A (c'è una formula); so its all about estimating B
+- lambda A [R | T]; dove lambda è un fattore di scala arbitrario del projective space
 
-studiando parametri e unknowns di B otteniamo che abbiamo bisogno di almeno 3 calibration images
+definiamo poi
 
-- nuovamente, ne usiamo 20 per essere più robusti al rumore con un least square approach
+- p1, p2, p3, p4 come le colonne della PPM
+- r1, r2, r3 le colonne della matrice di rotazione
+
+fattorizzando l'omografia ed applicando uguaglianze con la PPM, otteniamo
+
+- h1 = lambda A r1 (stessa cosa anche per h2 e h3)
+- in questa equazione conosciamo h1, ma tutto il resto no
+
+**Exploiting the properties of the rotation matrix, we come up with 2 equations that factor out the extrinsic parameters**
+
+- r1, r2 e r3 sono perpendicolari
+  - in particolare ci interessano r1 e r2
+  - il loro prodotto scalare fa quindi 0 (esprimiamo il prodotto scalare come prodotto matriciale (non so perchè), aggiungiamo quindi una trasposta)
+  - un po' di passaggi che ci portano ad ottenere la prima equazione... guarda screen
+
+![rotation rows equations](img/rotation_matrix_row_equations.png)
+
+![passaggi](img/passaggi.png)
+
+- sappiamo anche che le colonne (e righe) di una matrice di rotazione hanno norma pari a 1
+  - || r1 || = || r2 || = 1
+  - lo stesso vale anche al quadrato || r1 ||^2 = || r2 ||^2
+  - possiamo scrivere lo norma qudrata di un vettore come prodotto scalare di u vettore per se stesso: r1^T*r1
+  - a questo punto con passaggi simili a prima, otteniamo la seconda equazione
+
+A questo punto abbiamo:
+
+- **due equazioni per ogni calibration image**  in cui le incognite sono gli elementi di A
+- i parametri estrinseci sono stati tolti
+- i parametri di A sono gli stessi per ogni omografia dato che la camera è la stessa
+- chiamiamo B = A^-T* A^-1
+- knowing B is the same as knowing A (c'è una formula); **so its all about estimating B**
+  - si ottengono delle equazioni che ci permettono di ottenere gli elementi di A (parametri intrinseci) a partire dagli elementi di B
+- it can be shown that **B is symmetric so its unknowns are only 6**
+- **abbiamo quindi bisogno di minimo 3 calibration images** (in Zhang)
+  - 2 equazioni per calibration image (omografia stimata)
+  - 6 unknowns
+- nuovamente, ne usiamo molte di più (20) per essere più robusti al rumore (che si propaga dalla stima delle omografia) con un least square approach
 
 slide 14 non richiesta
 
-### Estimating the extrinsic parameters
+- quello che succede è che utilizzando n calibration images con n > 3 otteniamo un sistema di 2n equazioni in 6 incognite
+- di nuovo abbiamo un sistema di equazioni lineari overconstrained che non ammette soluzione esatta
+- e quindi stimiamo B con un least square error approach e il metodo SVD
 
-once we have estimated the homographies and the intrinsic parameters, we can estimated the (many) extrinsic parameters (one for every calibration image)
+# Estimating the extrinsic parameters
 
-### Lens distorsion casino [11:30]
+once we have estimated the homographies and the intrinsic parameters, we can estimate the extrinsic parameters (one for every calibration image)
 
-...
+- ricorda che H = lambda A \[r1 r2 T\]
+- equazione semplici
 
-we would like to have undistorted continuos image coordinates but what we have are distorted pixel coordinates
+**attenzione però**:
 
-...
+- il lambda calcolato rende sicuramente r1 un unit vector (stiamo facendo v/||v||)
+- non è detto però che utilizzando lo stesso lambda, il resto delle colonne siano anch'esse dei unit vector
+  - per esempio: con r2 lambda dovrebbe essere || A^-1 h2 || non || A^-1 h1 ||
+  - quindi, magari r2 non è proprio il vettore che mi serve
 
-per approssimare le undistorted pixel coordinates utilizziamo le homographies ottenute prima
+Otteniamo quindi un matrice di rotazione i cui vettori colonna sono probabilmente non esattamente ortonormali tra di loro.
+
+Come otteniamo una matrice ortonormale a partire da una matrice leggermente non ortonormale?
+
+- possiamo applicare SVD a R e decomporla nelle 3 matrici U sigma V^T
+- siccome R non è ortonormale, si può dimostrare che sigma, che dovrebbe esssere una matrice identità, ha invece dei valori diversi da 1 sulla diagonale
+- allora per ottenere the closest orthonormal matrix to R, R* basta sostituire sigma con la matrice identità I
+
+# Lens distorsion
+
+osservando la formula della lens distorsion abbiamo
+
+- due equazioni (una per x e una per y)
+- due incognite (k1 e k2)
+
+se per un singolo control point avessimo le sue undistorted and distored continuous coordinates potremmo stimare di gia k1 e k2
+
+- (con più control point potremmo ottenere una soluzione più robusta al rumore sempre con il metodo SVD che mi risolve un sistema overconstrained)
+- tuttavia noi non abbiamo le coordinate continue, **abbiamo solo le distorted pixel coordinates**
+- se avessi anche le undistorted pixel coordinates potremmo comunque utilizzare le due equazioni, però non abbiamo neanche quelle
+
+Come procedere?
+
+- Sicuramente dgitalizzo le mie coordinate continue con le formule che già conosco
+  - sia undistorted che distorted
+- posso sostituire nelle equazioni coordinate continue con le mie formule che dipendono solo da coordinate dei pixel
+- arriviamo a due equazioni in cui abbiamo bisogno di sapere undistorted e distorted pixel coordinates
+  - di nuovo, ricorda che abbiamo solo quelle distorte
+- noi non possiamo però conoscere le pixel coordinates non distorte, **e quindi le approssimiamo con le coordinate che otteniamo applicando le omografie stimate precedentemente**
+- a questo punto possiamo utilizzare tutte le calibration images e ottenere un sistema di 2mn equazioni in due incognite
+- questo è di nuovo un overconstrained linear system che risolviamo con SVD stimando in questo modo i parametri della lens distortion
+  - stavolta però il sistema non è omogeneo è quindi la soluzione del sistema (che non ci interessa) è un po' diversa
+
+# Finale refinement step
+
+come è stato fatto per le omografie, facciamo un ultimo passo di raffinamento finale in cui minimizziamo il reprojection error ottenuto vendendo dove viene mappato un punto nell'immagine utilizzando una PPM formata da tutti i parametri che abbiamo stimato
+
+alla fine della calibrazione otteniamo quindi una PPM che funziona anche per scene non planari al contrario dell'omografia stimata inizialmente
+
+### How do we know if a calibration is good or not?
+
+we compute the mean square root of the sum of the reprojection errors across every calibration point and every calibration image
+
+- if this is subpixel (0.5, 0.6) we have done a good calibration
+- if it is larger than a pixel, the calibration is not good
+
+we should always aim to have a subpixel mean reprojection error
 
 # Stereo camera calibration
 
