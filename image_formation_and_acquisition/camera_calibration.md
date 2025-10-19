@@ -314,47 +314,48 @@ we should always aim to have a subpixel mean reprojection error
 to calibrate a stereo camera, a naive approach could be to calibrate the two of them independently with zhang.
 
 - this way we get the intrinsic, extrinsic and lens distortion parameters for the two cameras
-- but, we don't get the rototranslation between the two cameras, or better CRF!
-- this is a key piece of information that we need to get depth information from disparity of corresponding points
-  - we also need the rototranslation to find correspondences (remember epipolar lines)
+- but, **we don't get the rototranslation between the two cameras**, or better, between the left and right CRFs!
+  - this is a key piece of information that we need to get depth information from disparity of corresponding points
+  - also, we need the rototranslation to find correspondences and get the disparity information (remember epipolar lines)
 
-we can leverage
+The rototranslation between the two cameras is what we wish to achieve in stereo calibration, since we already have everything else
 
-if show to both cameras at least one calibration image
+Knowing the extrinsic parameters of the two cameras wrt the same WRF would allow to compute the rigid motion between the two cameras by simply chaining the transformations: Gr (Gl)^-1
 
-gli extrinsic parameters trasformano da WRF a CRF
+- intuitivamente, stiamo passando da CRF_l a WRF e poi da WRF a CRF_r
+- ricorda che, gli extrinsic parameters trasformano da WRF a CRF
 
-se mostriamo la stessa immagine ad entrambe le camere abbiamo che la matrice dei parametri esterni ... [è più facile guardare la registrazione]
+With Zhang’s method this can be achieved by **showing the pattern to both cameras in at least one image** of their calibration sequences.
 
-- Pl = Gl Pw
-- Pr = Gr Pw
-- Gr Gl^-1 = Grl è la rototranslation che mi trasforma coordinate from the left to the right
+- in questo modo le coordinate nel WRF dei calibration point sono le stesse
 
-teoricamente basta mostrare una singola immagine, ma non c'è nessun motivo per cui non debba mostrare ad entrambe tutte le immagini di calibrazione
+![rototranslation from one CRF to the other](img/rototranslation_lr.png)
 
-se mostro tutte le immagini di calibrazione (n)
+Teoricamente, è sufficente mostrare una singola immagine ad entrambe le camere, ma non c'è nessun motivo per cui non debba mostrare ad entrambe tutte le immagini di calibrazione
 
-- ottengo una rototranslation per ogni immagine
-- posso farne la media per essere più robusto wrt noise
-- buona idea, purtroppo non posso fare una semplice media aritmetica tra rotation matrixes ed ottnere un'altra rotation matrix
+- se mostro tutte le immagini di calibrazione (n) ottengo una rototranslation per ogni immagine
+- posso farne una sorta di media per essere più robusto wrt noise
+- buona idea, **purtroppo non posso fare una semplice media aritmetica tra rotation matrixes ed ottenere un'altra rotation matrix**
 
-Come definiamo la mediana in un insieme di vettori?
+Cio che facciamo è quindi scegliere una di queste rototranslation come initial estimation, e poi risolvere come precedentemente un problema di ottimizzazione non lineare per minimizzare il reprojection error, raffinando questa stima iniziale
 
-- il vettore che ha la distanza minore rispetto a tutti gli altri
+Cosa scelgo come stima iniziale?
 
-come definiamo la mediana in un insieme di rotation matrixes?
+- scelgo la mediana delle rototranslation... ma che cosa significa?
+  - i vettori non hanno un ordinamento come i reali, come faccio a scegliere la mediana?
+- Come definiamo la mediana in un insieme di vettori (median translation vector)?
+  - il vettore che ha la distanza minore rispetto a tutti gli altri
+- Come definiamo la mediana in un insieme di rotation matrixes (median rotation matrix)?
+  - si trasformano le matrici in vettori di rotation angles e si applica la vector median definition
 
-- si trasformano le matrici in vettori
+Nota: in questo passaggio possiamo scegliere se ottimizzare ulteriormente le matrici intrinseche, i parametri per la distorsione della lente e le world coordinates dei calibration points, oltre che alla matrice di rototranslation tra le due camere
 
-Nota: in questo passaggio possiamo scegliere se ottimizzare ulteriormente le matrici intrinseche, i parametri per la distorsione della lente, ...,
-oltre che alla matrice di rototranslation tra le due camere
+Oss: le image coordinates predicted by our model a quanto pare dipendono solamente dai parametri mostrati nella slide; non mi è chiaro come mia utilizziamo solamente la rototranslation tra CRF però me lo faccio andare bene
+
+- con tutti quei parametri diventa possibile computare le PPM per entrambe le camere in qualche modo
 
 ### Stereo reference frame
 
 dopo la calibrazione possiamo incominciare ad usare la camera... bisogna però scegliere un WRF
 
 chiamiamo SRF il WRF della stereo camera calibrata: tipicamente CRF della camera sinistra
-
-###
-
-tutti questi problemi di ottimizzazione non lineare non sono troppo computazionalmente costosi???
