@@ -354,8 +354,29 @@ Oss: le image coordinates predicted by our model a quanto pare dipendono solamen
 
 - con tutti quei parametri diventa possibile computare le PPM per entrambe le camere in qualche modo
 
-### Stereo reference frame
+# Stereo reference frame
 
-dopo la calibrazione possiamo incominciare ad usare la camera... bisogna però scegliere un WRF
+dopo la calibrazione possiamo incominciare ad usare la camera, tipicamente per ottenere una pointcloud di punti 3d
+
+- bisogna però scegliere un WRF per i punti di questa pointcloud. Quale usiamo?
 
 chiamiamo SRF il WRF della stereo camera calibrata: tipicamente CRF della camera sinistra
+
+A questo punto abbiamo:
+
+- stimato la rototranslation da left a right camera
+- il WRF è il CRF della left camera
+
+La PPM della camera sinistra allora è: Pl = Al \[I 0\]
+
+- non c'è rototranslation dato che la left camera è il WRF
+
+Mentre la PPM della camera destra è: Pr = Ar \[R T\]
+
+- la rototranslation è quella dalla camera sinistra verso la destra stimata durante la stereo calibration
+
+**Conclusioni**:
+
+- alla fine della calibrazione stereo abbiamo ottenuto le PPM della left and right camera
+- i parametri intrinseci sono stati stimati con zhang
+- i parametri estrinseci sono presenti solo nella right camera ed anch'essi vengono stimati
