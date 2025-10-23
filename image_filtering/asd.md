@@ -131,3 +131,15 @@ What if we are given a single image?
     - se prendo un kernel piccolo, più o meno l'intensità sarà la stessa
     - se invece prendo un kernel grande potrei includere dei pixel associati ad altre entità nella scena con intensità diverse da p; e quindi otterrò un intensità risultate divers (blur)
 - c'è un tradeoff sulla dimensione del kernel per spatial filtering
+
+The Mean Filter is an LTE operator as it can be described by a kernel, and applied as a convolution
+
+- tuttavia, non applichiamo un mean filter come convoluzione
+- non c'è bisogno di fare tutte le divisioni, è sufficente sommare e fare una divisione alla fine (media)
+- applying the mean filter as a convolution would require 9 MAD, fare la media invece necessita di 9 somme e una divisione
+
+the mean filter is the fastest denoiser
+
+- even though it blurs, if the application doesn't mind, it can be very useful
+
+anche nelle immagine c'è il concetto di frequenze (sia verticali che orizzontali)
