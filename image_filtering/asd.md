@@ -104,6 +104,10 @@ Attenzione ai bordi
 - se il kernel è simmetrico non c'è neanche bisogno
 - btw anche nell CNNs quello che viene computato è una correlation
 
+**NB**: il numero di MAD che devo fare è uguale alla dimensione del kernel (es 7x7 -> 49 MAD)
+
+- il numero di MAD è o(n^2) rispetto alla dimensione del kernel
+
 # Denoising filter
 
 Come modelliamo il rumore?
@@ -132,14 +136,183 @@ What if we are given a single image?
     - se invece prendo un kernel grande potrei includere dei pixel associati ad altre entità nella scena con intensità diverse da p; e quindi otterrò un intensità risultate divers (blur)
 - c'è un tradeoff sulla dimensione del kernel per spatial filtering
 
+## Mean filter
+
 The Mean Filter is an LTE operator as it can be described by a kernel, and applied as a convolution
 
 - tuttavia, non applichiamo un mean filter come convoluzione
 - non c'è bisogno di fare tutte le divisioni, è sufficente sommare e fare una divisione alla fine (media)
 - applying the mean filter as a convolution would require 9 MAD, fare la media invece necessita di 9 somme e una divisione
 
+blurring is caused by pixels in the neighbour with different intensity, being averaged into the central one
+
 the mean filter is the fastest denoiser
 
 - even though it blurs, if the application doesn't mind, it can be very useful
 
 anche nelle immagine c'è il concetto di frequenze (sia verticali che orizzontali)
+
+**NB**: Il mean filter può essere visto da due punti di vista
+
+- denoising
+- semplificazione dell'immagine tramite **smoothing**
+  - a causa del blur i dettagli piccolini vengono eliminati, questo può essere un bene
+  - in altre parole il mean filter diminuisce anche il livello di dettaglio dell'immagine lasciando solo large scale objects
+
+**NB**: a volte un livello di dettaglio troppo alto potrebbe essere fastidioso per algoritmi di image processing
+
+## Gaussian filter
+
+the gaussian filter is the filter such that:
+
+- h(x,y) = G(x, y)
+- il filtro che ha come impulse response function una gaussiana 2d
+- proprietà interessante è la circular simmetry
+
+### practical implementation
+
+nel mean filter i pesi del kernel sono uniformi
+
+nel gaussian filter i pesi del kernel sono distribuiti come la gaussiana 2d
+
+- near 0 sui bordi
+- big numbers nel centro
+- immagino che anche qui la simmetria circolare si noti
+
+gaussian filter causes less blur because of its distribution in the kernel
+
+The discrete Gaussian kernel can be obtained by sampling the corresponding continuous function, which is however of infinite extent.
+
+- To capture the whole function i would need to choose a kernel of infinite size
+- we definetly can't do that
+
+A finite size must therefore be properly chosen.
+
+- the bigger the filter the better the approximation of the gaussian
+- the smaller the filter the less computation
+
+We should pick as many samples as needed (vogliamo sample !~ 0)
+
+- questo dipende dalla deviazione standard della gaussiana
+  - se la deviazione standard è alta -> la gaussiana è schiacciata -> devo prendere più samples
+  - se la deviazione standard è bassa -> la gaussiana è secca -> devo prendere meno samples
+- sigma è il parametro che regola lo smoothing
+  - larger sigma = more smoothing
+
+As the interval [-3sigma, +3sigma] captures 99% of the area (“energy”) of the Gaussian function
+
+A typical rule-of-thumb dictates taking a (2k+1)×(2k+1) kernel with: k = lower(3*sigma)
+
+**NB**: di nuovo valgono le considerazioni su smoothing e semplificazione dell'immagine
+
+**NB**: it can be proved that gaussian filtering is the only kind of filtering that doesn't introduce artifacts (something that wasn't present in the original image)
+
+- for this reason it's the main tool for processing images at various kinds of detail
+  - variando il livello di smoothness con sigma non introduciamo comunque artifatti
+
+# Impulse noise (salt & pepper noise)
+
+al contrario di gaussian noise, qua abbiamo molti pixel senza rumore
+
+inoltre qua la corruzione causata dal rumore o è totale o è assente; al contrario del caso gaussiano che corrompe con un rumore piccolino
+
+- noise has created outliars (pixels that are totally different from the others)
+
+Il Gaussian noise modella il rumore cumulativo di tutte le sorgenti di rumore nel processo di acquisizione dell'immagine
+
+quand'è che un immagine può essere corrotta da impulse noise invece?
+
+- quando alcuni sensori nella camera sono rotti
+- quando l'immagine viene trasmessa su un canale rumoroso
+- oppure anche quando l'immagine che stiamo cercando di processare non è un'immagine vera e propria ma piuttosto un risultato di una computazione intermedia
+  - vedi disparity map in stereo matching
+  - se sbaglio a matchare due pixel ottengo una disparity strana che è un outliar
+
+Come si rimuove l'impulse noise?
+
+linear filters di qualsiasi tipo non funzionano
+
+- con mean filter spargiamo gli outliar across an area rendendoli meno evidenti
+- con gaussian piu o meno la stesssa cosa
+
+## Median Filter
+
+Per eliminare impulse noise l'idea è buttar via il pixel che è outliar e sostituirlo con uno che non lo è
+
+la domanda diventa quindi come facciamo a riconoscere che un pixel è un outliar?
+
+con median filter scegliamo la mediana dell'intorno (dopo sort)
+
+- outliars are never in the middle
+
+This is NOT a linear operator
+
+- this means that this filter doesn't apply any convolutions (d'altronde non stiamo facendo delle MAD, stiamo facendo delle mediane)
+
+The median preserves edges better than mean/gaussian filters
+
+The median filter however doesn't work well with gaussian noise
+
+### What if i have an image with both gaussian noise and impulse noise
+
+we first get rid of outliars with a median filter
+
+- this way we're substituing an outliar with another pixel subject to gaussian noise
+
+after that we eliminate gaussian noise with a gaussian/mean filter
+
+# gaussian denoisers that preserve edges
+
+## Bilateral filter
+
+now i want a filter that denoises like a gaussian filter but without blurring
+
+A gaussian filter considers bright pixels while the pixel we're computing the new value for is dark
+
+- when i'm close to an edge i mix together bright and dark pixels
+
+we would like a weight function that adapts to the kind of neighbour we're within
+
+- when we're on a uniform region we would like a full gaussian
+- wehn we're near an edge we want to consider only the pixels in the neighbour with a similar intensity
+
+A bilateral filter weighs nieghbours highly considering
+
+- distance from the center
+- intensity difference
+- this filter weighs highly pixels that are near the center and close in intensity to the one we're computing a new value for
+
+Facciamo di nuovo una somma pesata dell'intensità di un intorno
+
+- stavolta però per i pesi non campioniamo una singola gaussiana
+- Usiamo due gaussiane
+  - una che decresce con spatial distance
+  - l'altra che decresce con intensity distance
+- abbiamo anche un termine che mi normalizza dividendo ogni peso con la somma di tutti i pesi dell'intorno
+  - this way all the weights sum up to one and are all between 0 and 1
+  - filters with this property are said to have **unitary gain**
+  - this is means that in an area the average intensity doesn't change (in an uniform area the intensity doesn't grow or shrink)
+
+A gaussian filter considers only distance from the center
+
+A bilateral filter is more computationally expensive than a gaussian filter because we have to compute the weights
+
+- way slower than the gaussian filter
+
+## Non-local means filter
+
+I can calculate a new intensity for a pixel considering every other pixel in the image
+
+- again we use weights to
+
+we can weigh more, pixels that have a similar neighbourhood to the one that we're trying to compute a new value for
+
+- the idea is that we want to weigh more pixel that are part of the same surface of the given one
+
+Questo filtro ha come vantaggio la possibilità di considerare molti pixel per fare denoising
+
+- per la legge dei grandi numeri questo ci permette di avvicinarci alla media di zero della distribuzione del rumore
+
+considerare tutta l'immagine però è crazy slow
+
+- per questo motivo aggiungiamo un ulteriore parametro che definisce la regione dell'immagine in cui andiamo a guardare
