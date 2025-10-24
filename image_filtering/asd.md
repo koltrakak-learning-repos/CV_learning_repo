@@ -301,6 +301,8 @@ A bilateral filter is more computationally expensive than a gaussian filter beca
 
 ## Non-local means filter
 
+even more computationally expensive than the bilateral filter
+
 I can calculate a new intensity for a pixel considering every other pixel in the image
 
 - again we use weights to
@@ -308,6 +310,8 @@ I can calculate a new intensity for a pixel considering every other pixel in the
 we can weigh more, pixels that have a similar neighbourhood to the one that we're trying to compute a new value for
 
 - the idea is that we want to weigh more pixel that are part of the same surface of the given one
+
+# riguarda meglio la spiegazione della formula (ultima mezz'ora)
 
 Questo filtro ha come vantaggio la possibilità di considerare molti pixel per fare denoising
 
