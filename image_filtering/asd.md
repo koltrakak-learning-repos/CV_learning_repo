@@ -295,7 +295,7 @@ Facciamo di nuovo una somma pesata dell'intensità di un intorno
 
 A gaussian filter considers only distance from the center
 
-A bilateral filter is more computationally expensive than a gaussian filter because we have to compute the weights
+A bilateral filter is more computationally expensive than a gaussian filter because we have to compute the (intensity distance) weights at each position in the image
 
 - way slower than the gaussian filter
 
