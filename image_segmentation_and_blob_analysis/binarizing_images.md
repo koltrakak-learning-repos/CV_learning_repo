@@ -200,17 +200,3 @@ nota come con la mahalonibis distance abbiamo i fattori di scaling a denominator
 se la matrice di covarianza non è diagonale, la possiamo sempre diagonalizzare dato che è simmetrica e (?). Abbiamo degli altri termini che possiamo però eliminare tramite una rotazione che non causa problemi dati che le rotazioni non modificano le distanze
 
 slide dovrebbero essere chiare a questo punto
-
-## binary morphology
-
-binarization may leave out some mistakes:
-
-- false positives: background pixels classified as foreground
-- false negatives: foreground pixels classified as background
-
-binary morphology operators are operators thatn handle these mistakes
-
-- they take as input: a binary image and a kernel
-- they ouotput a new processed binary image
-
-they look pretty much like filters
