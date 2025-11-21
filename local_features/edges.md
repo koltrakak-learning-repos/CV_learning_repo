@@ -97,7 +97,9 @@ After NMS we threshold the survivors because we want strong edges
 
 # Canny's edge detector
 
-by far the most used edge detector
+OSS: Sobel filtering is just a way to compute smooth derivatives (possiamo usarlo per computare il gradiente di un'immagine), it's **NOT a full edge-detector**
+
+by far the most used edge detector is Canny
 
 three properties we want:
 
@@ -112,7 +114,7 @@ three properties we want:
 It can be shown (through some heavy math) that the optimal function that Canny find is the first derivative of a Gaussian... but this is in 1d
 
 - the gaussian's purpose is handling noise
-- the most common 2d canny implementation is basically a gaussian filter that removes noise and then computing the gradient of the image
+- **the most common 2d canny implementation is basically a gaussian filter that removes noise and then computing the gradient of the image**
 - one response to an edge is obtained through NMS
 
 ## smart thresholding
@@ -133,6 +135,6 @@ but now we have to tune 2 parameters?
 
 it's not implemented well
 
-manca un gaussian filter iniziale
+manca un gaussian filter iniziale per rimuovere il rumore
 
-**sobel è un approssimazione per gaussian filter?**
+- ricorda che sobel serve solo a computare le derivate
