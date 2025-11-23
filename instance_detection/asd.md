@@ -93,6 +93,7 @@ Idea:
   - the more matches i have, the more hypotheses i have on the position of the baricentre
   - if many hypotheses predict the baricentre to be in the same position, ho una buona certezza di aver trovato l'oggetto da detectar
   - se i joining vector nel target trovano tutti baricentri diversi non ho trovato la mia instance
+- **NB**: devo fare il tuning di una soglia minima del numero minimo di joining vector coerenti per poter affermare di aver trovato un'istanza del mio oggetto
 
 **NB**: La formulazione sopra non funziona però se nella target image abbiamo rotation and scale changes
 
