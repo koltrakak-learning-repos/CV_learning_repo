@@ -201,6 +201,16 @@ FC layers
 
 - the opposite
 
+**NB**: sembra che una buona idea sia mettere gli FC layers alla fine della rete dopo che si sono computate delle feature generali con vari conv layers
+
+- innanzitutto, gli fc layers alla fine diventano fattibili dato che l'input è stato shrinkato a sufficenza da non richiedere un numero ridicolo di parametri
+  - il numero di canali tende a crescere però di solito si applica global average pooling
+- more importantly, i fc hanno un ruolo di ricombinazione delle feature globali detected alla fine dei layer convoluzionali (ho delle attivazioni di una bocca, due occhi, un naso -> ricombino per ottenere un'attivazione di un volto umano)
+
+**OSS**: solitamente la definizione di nuove architetture è incrementale, nel senso che si tende a mantenere tutto uguale se non per alcune modifiche che si vuole dimostrare siano migliorative
+
+- altrimenti non si saprebbe a cosa ricondurre un aumento delle performance
+
 # esempi di reti
 
 ## Lenet
@@ -234,3 +244,39 @@ notion of a stage
 
 - 3 conv layer di file con kernel 3x3 sono equivalenti a un singolo conv layer con kernel 7x7
 - tuttavia, 3 conv layer separati sono meglio dato che abbiamo meno parametri e flop (scala con n^2) e introduciamo più non linearità il che aumenta l'espressività
+
+## VGG (visual geometry group)
+
+vgg were able to go very deep with their network (19 layers)
+
+it showed that going deep helps performance (if you can train the network)
+
+it also showed how to build deep networks with a very regular design
+
+another good idea was **doubling the cannels after every pooling layer**
+
+- quando shrinkiamo compensiamo con più profondità
+
+infine, idea of **stages**
+
+- perchè hanno senso?
+- stesso motivo di alexnet
+- abbiamo meno computazione e introduciamo più non linearità
+- A stage requires more memory to store the activations, though.
+
+vgg-16 -> 16 numero di learnable layers
+
+siccome questa archietttura è molto profonda, è suscettibile all'instabilità del gradiente durante il training
+
+- per risolvere il problema hanno sfruttato, inizialmente, tecniche di pretraining per inizializzazione della rete
+- in seguito si sono poi scoperte tecniche di inizializzazione che funzionano anche senza fare pretraining con modelli meno profondi
+
+# Global Average Pooling
+
+we've seen that most of the parameters of a network reside at the interface between the last conv activation and the first fc layer
+
+global average pooling is a way to reduce the number of these parameters
+
+just maxpool across the channels
+
+ha senso, ci interessa solo la presenza o meno delle feature generali non tanto dove siano
