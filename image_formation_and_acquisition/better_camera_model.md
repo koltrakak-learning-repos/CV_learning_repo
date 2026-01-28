@@ -147,6 +147,8 @@ Questa forma canonica della ppm ci dimostra l'essenza della perspective projecti
 - this is what perspective projection does, it scales objects down the farther they are from the camera
 - a specific camera introduces other parameters (focal length)
 
+---
+
 # a more comprhensive camera model
 
 With projective coordinates we have gained:
@@ -323,16 +325,3 @@ Successivamente, la matrice degli intrinseci maps the continuous (distorted) ima
 # Image formation flow
 
 ![image_formation_flow](img/image_formation_flow.png)
-
----
-
-# Come funziona il processo di estimation
-
-at parameter estimation time:
-
-- we're trying to develop a model that given some inputs gives us some outputs
-- but we don't know the correct parameters of the model
-- to estimate them we need to have the corresponding outputs of a given input
-- **we need correspondences!**
-
-once we've estimated the parameters: we can use the model to predict the output of a given input
