@@ -163,6 +163,7 @@ What are we still lacking with this model?
 - As it is now, this model is useless
   - there is no way to compute 3d coordinates because the camera reference frame is an abstraction
   - **we can only measure 3d coordinats in a reference frame that is convenient to us (world reference frame)**
+    - only in a rf that we choose we can take measurements, the CRF is somewhere inside the camera, more of a mathematical model than anything
   - but world reference frame coordinates are invalid for perspective projection because this model assumes CRF coordinates
   - we need a way to transform coordinates from WRF to CRF and only then apply perspective projection
     - rototranslation
