@@ -1,0 +1,9 @@
+ref im1.pgm
+groundtruth disp1.pgm
+
+disp_min 0
+disp_max 29
+disp_scale 8
+
+ignore_border 0
+

@@ -1,0 +1,8 @@
+ref im6.ppm
+groundtruth disp6.pgm
+
+disp_min 0
+disp_max 19
+disp_scale 8
+
+ignore_border 0

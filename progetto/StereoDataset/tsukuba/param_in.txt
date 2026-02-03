@@ -1,0 +1,8 @@
+ref scene1.row3.col2.ppm # mi sa che è col3 in realtà
+groundtruth truedisp.row3.col3.pgm
+
+disp_min 0
+disp_max 15
+disp_scale 16
+
+ignore_border 18

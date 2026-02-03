@@ -1,8 +1,20 @@
-Finding correspondences is a key problem in CV. There are many CV tasks in which finding correspondences is the main problem
+Finding correspondences between two or more images is a key problem in CV
 
-**DEF**: Correspondences are pixels in multiple images that are the projection of the same 3d point
+- there are many CV tasks in which finding correspondences is the main problem
+- stereo correspondece problem
+- image mosaicing
+  - ho bisogno di trovare almeno 4 corrispondenze tra due immagini in modo tra computare un omografia che mi fa passare dall'una all'altra
+  - ottenuta l'omografia posso costruire un'immagine più grande contenente
+    - la prima immagine per intero, i pixel della seconda immagine mappati grazie all'omografia
 
-interessante:
+Establishing correspondences may be difficult as **homologous points may look different in the different images**
+
+- e.g. due to viewpoint variations and/or light changes
+
+**DEFINIZIONE IMPORTANTE**: Correspondences are pixels in multiple images that are the projection of the same 3d point
+
+```
+Interessante:
 
 per fare panoramiche utilizziamo omografie... però non sembra la trasformazione giusta!
 
@@ -18,43 +30,64 @@ stiamo approssimando:
 - scene con uno sfondo lontano possono essere approssimante come planari
 - ruotare la camera senza traslare troppo è circa come ruotare rispetto all'optical centre
 
-# come troviamo corrispondenze
+```
 
-- bisogna trovare salient points
-  - punti particolarmente informativi (non regioni uniformi)
-    - fingerprint of an image
-  - we disregard all other non-salient points
-  - troviamo le corrispondenze tra i salient points
-  - come si trovano salient ponts? Anche questo è un problema
+# Come troviamo corrispondenze
 
-- confrontiamo neighbourhoods dei salient points
-  - we compare neighbourhoods through a descriptor
-    - vectors of real numbers
-  - this is because the two images might have been taken in different lighting, or whatever else conditions
-    - for example comparing neighbourhoods wrt to color intensities wouldn't be a good idea since the colors of the same neighbourhoods would be different if the lighting conditions were different
+Abbiamo 3 step:
 
-domanda: siamo sicuri che i salient points identificati nelle due immagini contengano effettivamente le corrispondenze?
+1. **Bisogna trovare (detection) salient points**
+    - punti particolarmente informativi (non regioni uniformi)
+        - fingerprint of an image
+    - we disregard all other non-salient points
+    - **cerchiamo le corrispondenze tra i salient points delle immagini**
+    - come si trovano salient ponts? Adesso vediamo
 
-Local INVARIANT features: we want to esablish correspondences between images despite images being quite different
+2. **Compute a local “description” to recognize salient points across images**
+    - ricorda che lo stesso salient point può essere diverso in immagini diverse
+        - this is because the two images might have been taken in different lighting, or whatever else conditions
+        - comparing neighbourhoods wrt to color intensities wouldn't be a good idea since the colors of the same neighbourhoods would be different if the lighting conditions were different
+    - we compare neighbourhoods through a **Descriptor (vectors of real numbers)** that allows us to match the same salient point even if it looks different in different images
 
+3. **Matching descriptors between images**
+    - we find the correspondences by matching descriptors of salient points in different images
+
+This is the local invariant feature paradigm:
+
+- we want to esablish correspondences between images despite images being quite different
+- to do so we try to compute pixels that exhibit features that are invariant across different images
 - in particular we want to be invariant to scale
   - ricorda che scale è la perceived dimension di un oggetto nell'immagine, non la vera dimensione
   - la scale dipende dalla distanza, dalla focal length e dalla true dimension
 
-# Come troviamo i keypoints?
+Desirable properties of Detectors
 
-un local feature che conosciamo già sono gli edges
+- Repeatability: it should **find the same keypoints in different images** of the scene despite the tranformations undergone by the images.
+  - se non riusciamo a produrre gli stessi salient point, sicuramente non riusciamo a trovare le corrispondenze
+- Interestingness/Saliency: it should find keypoints surrounded by an informative neighbourhood, which would be transformed in a very distinct descriptor that can easily be told apart from the descriptors of the other salient points during the matching process
 
-a good salient point is one where its neighbourhoods is a good description that allows us to find the coorrespondence
+Desirable properties of Descriptor
+
+- Distinctiveness vs. Robustness Trade-off: the description algorithm should capture the salient information around a keypoint, so to capture the distinctive pattern and **disregard changes due to nuisances (e,g. light changes) and noise**
+  - the same salient point, although different in different images, should compute more or less the same descriptor. This way we can do the matching
+
+# Come troviamo/scegliamo i keypoints?
+
+Una local feature che conosciamo già sono gli edges
+
+**A good salient point is one where its neighbourhood is a good description that allows us to find the coorrespondence**
 
 an edge is NOT a good keypoint
 
 - along the gradient direction there is a strong change
-- along the orthogonal direction there is little change
+- **along the orthogonal direction there is little change**
+  - un edge pixel di un'immagine potrebbe combaciare con molti edge pixel dell'altra immagine (tutti quelli appartenenti allo stesso edge)
 
-per lo stesso motivo i punti appartenenti a uniform regions non sono good keypoints (anche peggio rispetto a edges)
+![edges_are_not_good_keypoints](img/edges_are_not_good_keypoints.png)
 
-**DEF**: A good salient point is a point where there is a strong change in both the direction along the gradient and the direction perpendicular to the gradient
+Per lo stesso motivo i punti appartenenti a uniform regions non sono good keypoints (anche peggio rispetto a edges)
+
+Thus, **a good salient point would be a point where there is a strong change in both the direction along the gradient and the direction perpendicular to the gradient**
 
 - es: corners
 
@@ -62,72 +95,108 @@ per lo stesso motivo i punti appartenenti a uniform regions non sono good keypoi
 
 ## Moravec corner detector
 
-distance between neighbours... why is this a good cornerness function?
+Per capire se un punto è un corner confrontiamo, il neighbourhood del punto con il neighbourhood dei suoi 8 punti adiacenti ottenendo un'errore/distanza tra neighbourhoods
+
+![moravec](img/moravec.png)
+
+Why is this a good cornerness function?
 
 - if p is in a uniform area the distances are all very small
-- if p is an edge, moving along the edge produces small distances and we take the minimum
-- the only way this function can be high is when p is a corner
+- if p is an edge, moving along the edge produces small distances, moving across the edge produces big distances, but we take the minimum
+- se in qualunque direzione ci spostiamo la distanza tra neighbourhood è comunque significativa, allora siamo in un corner
+  - the only way this function can be high is when p is a corner
 
 ## Harris corner detector
 
-improves moravec
+Improves moravec
 
 - continuous formulation of moravec
-- its better because its less prone to quantization errors
+- better because detects corners more reliably since it doesn't check only 8 directions
 
 (used by opencv for finding calibration points)
 
-instead of comparing only to 8 neighbourhoods, we compare to the infinite neighbourhoods along all directions
+Instead of comparing only to 8 neighbourhoods, we compare to the infinite neighbourhoods along all directions
 
-L'errore di harris è lo square error tra l'intorno del punto considerato, e l'intorno shiftato infinitesamente in una direzione
+**L'errore di harris è lo square error tra l'intorno del punto considerato, e l'intorno shiftato infinitesamente in una direzione**
 
-- ogni punto dell'immagine ha il suo intorno e i suoi gradienti
+- ogni punto di cui vogliamo calcolare la cornerness ha la sua weight function che considera gli intorni giusti
   - la weight function sets to zero the points that are not the local neighbourhoods
-- like Moravec but the shift is infinitesimal and the shift can be along any direction
+- **like Moravec but the shift is infinitesimal and the shift can be along any direction**
+- siccome lo shift è infinitesimale, possiamo esprimere con un'approssimazione di taylor **l'errore come la mia derivata in una direzione (che ha quel valore solo in quel punto) per quanto mi sono spostato in quella direzione**
+  - dot product tra gradiente del punto e direzione dello shift => derivata rispesso alla direzione dello shift
 
- [11:03] spiegazione formula di taylor
+![harris_error](img/harris_error.png)
 
-Nota: otteniamo il dot product along the gradient and the shift; ovvero la derivata nella direzione dello shift
+Con un po' di passaggi raggiungiamo una **forma matriciale dell'errore in cui solo la matrice M dipende dall'immagine**
 
-raggiungiamo una forma matriciale dell'errore in cui solo la matrice M dipende dall'immagine
+- M riassume la struttura dell'immagine attorno al punto di cui si vuole considerare la cornerness
+  - M viene chiamata structure matrix perchè **cattura come l'intorno del pixel varia**
+  - contiene infatti somme di derivate parziali nell'intorno
+- l'errore rispetto ad ogni shift viene parametrizzato dalla direzione dello shift e dipende dalla M del punto di cui si sta calcolando la cornerness (da come l'intorno varia)
 
-- M riassume il contenuto dell'immagine
-  - M viene chiamata structure matrix perchè cattura come l'intorno del pixel varia
-- l'errore rispetto ad ogni shift viene parametrizzato dalla direzione dello shift ed ha M come variabile
+![forma matriciale dell'errore di harris](img/forma_matriciale_errore_harris.png)
 
-ipotizziamo che M è diagonale (non c'è perdita di generalità (real and symmetric matrixes can always be diagonalized))
+Ipotizziamo che M è diagonale (non c'è perdita di generalità (real and symmetric matrixes can always be diagonalized))
 
 - i lambda sono eigenvalues
   - lambda1 is the larger one
   - lambda2 is the smaller one
+- il larger eigenvector (eigenvector associato al larger eigenvalue) rappresenta la direzione di maximal change
+  - l'altro eigenvector è una direzione perpendicolare che può avere del change o meno (dipende se siamo in un edge/corner o qualche altra regione)
 
 **importante per l'esame!**
 
 - se entrambi i lambda sono piccoli
-  - l'errore è piccolo
-  - **per ogni shift!** siamo in una regione uniforme!
-  - gli intorni sono smili
+  - l'errore è piccolo **per ogni shift!**
+  - siamo in una regione uniforme! gli intorni sono smili
 - se lambda1 >> lambda2 (ricorda che lambda1 è sempre maggiore)
-  - l'errore è grande solo se shiftiamo verso deltax
-  - l'errore è piccolo se shiftiamo nella direzione perpendicolare
+  - il contributo all'errore è grande per lo shift verso deltax
+  - il contributo all'errore è piccolo per lo shift nella direzione perpendicolare
+- se sono entrambi grandi
+  - il contributo all'errore è significativo in entrambe le direzioni
+  - siamo in un corner
 
-ricorda che il larger eigenvector (eigenvector associato al larger eigenvalue) rappresenta la direzione di maximal change
+Ricorda che il larger eigenvector (eigenvector associato al larger eigenvalue) rappresenta la direzione di maximal change
 
-- se anche la direzione di maximal change è piccola, siamo in un area uniforme
+- se anche la direzione di maximal change varia poco, siamo in un area uniforme
 - se variamo tanto nella direzione di maximal change, ma non nella direzione di minimal change -> siamo su un edge
 - altrimenti siamo in un corner
 
-## implementing harris
+### Implementing harris
 
-una implementazione naive potrebbe essere calcolare le derivate, ottenere M, e calcolare gli autovalori lambda
+Una implementazione naive potrebbe essere:
 
-tuttavia calcolare gli autovalori di una matrica è computazionalmente costoso
+- calcolare le derivate
+- costruire M con quest'ultime
+- calcolare gli autovalori lambda da M
+- analizzare gli autovalori per vedere se siamo in un corner o meno
 
-harris offre una soluzione più efficente che richiede di calcolare solo determinante e traccia di M
+Tuttavia calcolare gli autovalori di una matrice è computazionalmente costoso (e noi dovremmo farlo per ogni pixel dell'immagine)
 
-- cornerness function (descriptor)
+Harris offre una soluzione più efficente che richiede di calcolare solo determinante e traccia di M
+
+- cornerness function C (descriptor)
+  - C > 0 su un corner
+  - C ~= 0 in un area uniforme
+  - C < 0 su un edge
+- (Esiste anche la cornerness function di shi-tomasi che è più assimilabile all'idea naive che abbiamo visto sopra e consiste solamente nel prendere il min dei lambda)
+
+The Harris corner detection algorithm can thus be summarized as follows:
+
+1. Compute C at each pixel
+    - richiede costruire M e quindi richiede calcolare le derivate parziali di ogni punto
+    - si noti anche che the w(x,y) used Harris inside M is Gaussian rather than Box-shaped, so to assign more weight to closer pixels and less weight to those farther away
+        - non ho ben capito perchè
+2. Select all pixels where C is higher than a chosen positive threshold (T).
+    - vogliamo corner forti
+3. Within the previous set, detect as corners only those pixels that are local maxima of C (NMS).
+    - vogliamo corner e non punti vicini ai corner
+
+---
 
 # Scale-invariance
+
+Una feature è scale-invariant quando, la medesima istanza si riesce a trovare in immagini diverse nonostante appaia in quest'ultime con scale diverse
 
 **harris corner detector is not scale invariant**
 
@@ -135,155 +204,281 @@ harris offre una soluzione più efficente che richiede di calcolare solo determi
 
 **NB**: being a corner or not depends not only on the structure of the image, but also on its scale!
 
-In an image there also exist features at different scales
+- different images may have the same corner present at different scales, using the same size window for all images, sometimes this point could be classified as a corner and sometimes not
+
+**The use of a fixed-size detection window makes it impossible to repeatably detect homologous keypoints when they appear at different scales in images.**
+
+![same_size_window](img/same_size_window.png)
+
+Also, **in an image features are present at different scales**
 
 - with harris we would need to decide the scale at which we want to detect the corners
 - but we want to find corners (every feature really) at every scale
-  - we want scale invariance
-- why? because the more features we can detect the more points we have at our disposal for matching
-  - also in different images, some features might disappear (vedi cima taj mahal che scompare nella foto lontana)
-  - with more features we're more robust to features disappearing if we want to match them
+  - **we want scale invariance**
+- why?
+  - **because the more features we can detect the more points we have at our disposal for matching**
+- Also in different images, some features might disappear (vedi cima taj mahal che scompare nella foto lontana)
+  - **Features exist within a certain range of scales**
+  - **With more features we're more robust to features disappearing if we want to match them**
+- with scale invariance, the same feature would simply be detected at different scales within a multi-scale detection process.
+  - we do not lose useful features for matching
+
+![different_scale_features](img/different_scale_features.png)
 
 All this is to say that we need a **dynamic-size detection window**
 
 - in different images, features appear at different scales
 - if we used fixes-size windows it would be impossible to detect them all
 - and that would make finding correspondences difficult
-- large scale features should use large detection windows, small scale features should use small ones
+- **large scale features should use large detection windows, small scale features should use small ones**
 
-We have an issue. To match features at different scales we need to have similar descriptors
+We have an issue: to match features at different scales we need to have similar descriptors
 
-- but at different scales different features show up
-- and so the resulting descriptor would be different for the same neighbourhoods in different images
-- to solve this issue by applying a smoothing filter
-
-We have an issue. To match features at different scales we need to have similar descriptors
-
-- but at different scales different features show up
-- and so the resulting descriptor would be different for the same neighbourhoods in different images
-- we can solve this issue by applying a smoothing filter that eliminates small features (simplifies images) in large scale pictures
-- this allows us to match to the small scale picture
+- but at different scales different details show up inside the detection window
+- and so the resulting descriptor would be different for the same feature in different images
+  - pensa all'esempio della collina con i fiori: le feature è la cima della collina, ma in scala grande dentro al descriptor ci sono dei fiori, in scala piccola no
+- we can solve this issue by applying a **smoothing filter that eliminates the unwanted small details present when the scales is big**
+  - **smoothing makes features at different scales comparable**
 
 ## How do we detect multiscale features
 
-do we really need a dynamic-size detection window? This could get computationally expensive con neighbourhoods grandi
+Do we really need a dynamic-size detection window? This could get computationally expensive quando i neighbourhoods diventano grandi
 
 Abbiamo due opzioni in realtà:
 
 1. we can increase the size of the neighbourhood
-2. we can change the size of the image (by downsampling) while keeping the neighbourhood size fixes
+2. **we can change the size of the image (by downsampling) while keeping the neighbourhood size fixed**
     - the more shrinkage the larger the scale of the features we look for
 
-option 2 is way more computationally efficient because we work with less pixels (both considering the neighbourhood and the whole image)
+Option 2 is way more computationally efficient because we work with less pixels (both considering the neighbourhood and the whole image)
 
-we're introduced to a new concept
+We're introduced to a new concept:
 
-- receptive field of an operator: its the size region of the image that determines the output of an operator
+- **receptive field of an operator**: its the size region of the image that determines the output of an operator
 
-NB: actually we combine downsampling with smoothing for the reasons above
+**NB**: we combine downsampling (larger detection window) and smoothing (same detail level) to detect features at every scale inside an image
 
 # Feature detection and Scale selection
 
-A **scale-space** is a stack of images each at different levels of smoothing (scale)
+As features exist across a range of scales, **we need criteria for both feature detection and optimal (aka characteristic) scale selection.**
 
-- the more smoothing is applied, the larger the scale of the features we detect
+- characteristic scale: the scale at which the feature is maximally salient
 
-characteristic scale: the scale at which the feature is maximally salient
+A **Scale-Space** is a one-parameter (i.e. scale) family of images created from the original one so that **the structures at smaller scales are successively suppressed by smoothing operations**
 
-the only way to simplify an image correctly (smoothly and without introducing artifacts) increasing the scale is the gaussian filter
+- the more smoothing is applied -> less details are present -> only large scale features remain and can be detected
+- A scale-space is a stack of images each at different levels of smoothing (scale)
+- we construct a scale-space so we can compare features at
 
-sigma è lo scale parameter
+The only way to simplify an image correctly (smoothly and without introducing artifacts) increasing the scale is the gaussian filter
 
-- più è grande maggiore è lo smoothing e maggiore è la scala delle features che rileviamo
+- sigma è lo scale parameter
+- maggiore è lo smoothing e maggiore è la scala delle features che rileviamo
 
-NB: another way to realize the gaussian scale space is by thinking of the image as an heat-map and solving the heat equation through time
+**Thus, a Scale-Space is created by repeatedly smoothing the original image with larger and larger Gaussian kernels**
 
-- the more time passes the more smoothing (relazione con sigma)
-- k è un parametro che rappresenta la conduttività termica
-
-conclusione: the way to simplify an image is through gaussian filters
+- applichiamo tante convoluzioni con un kernel gaussiano, ogni convoluzione con un parametro sigma diverso, e otteniamo il nostro stack che forma il scale space
+- nota: another way to realize the gaussian scale space is by thinking of the image as an heat-map and solving the heat equation through time
+  - the more time passes the more smoothing (relazione con sigma)
+  - k è un parametro che rappresenta la conduttività termica
 
 ## how do we detect features?
 
-The Gaussian Scale-Space is the right tool to smooth an image in order to progressively simplify its content. However, it neither includes any criterion to detect features nor to select their characteristic scale
+The Gaussian Scale-Space is the right tool to smooth an image in order to progressively simplify its content. However, it neither includes any **criterion to detect features nor to select their characteristic scale**
 
-key finding: we can detect features across scales by finding extrema of certain combination of gaussian derivatives
+- ricorda che: features exist across a range of scales **within the Gussian Scale-Space**
+- the notion of characteristic scale deals with establishing at which scale a feature turns out maximally interesting and at which should therefore be described.
 
-- features are filtered by the derivative of the gaussian
-- scale normalized because derivatives computed at larger scales sono più blurred e quindi hanno derivate per forza più piccole
+**Key finding**: we can detect features across scales by finding extrema of (scale-normalized) derivatives (derivative-like family really) of the Gaussian Scale-Space
 
-we check for features by looking for extrema across space and scale
+- we compute the gaussian scale space by applying many times a gaussian filter
+- we compute some sort of derivative-like operation on the resulting images of the gaussian scale space
+- we detect features as extrema of these derivatives in the resuliting 3d-space (x,y, scale/sigma)
+- scale normalized (multiplication by sigma^2) because derivatives computed at larger scales hanno derivate per forza più piccole dato che sono più blurred dal gaussian smoothing
+  - se non facessimo niente, farebbero fatica a diventare extrema anche se quella è la loro characteristic scale
 
-## LOG (Laplacian of Gaussian)
+**we check for features by looking for extrema across space and scale of the derivative of the gaussian scale space**
 
-[14:52]
+### LOG (Laplacian of Gaussian)
 
-we're going to be finding extrema of the scale-normalized Laplacian of Gaussian
+Between Lindberg’s proposed combination of derivatives is the scale-normalized Laplacian of Gaussian (LOG)
 
-now a property of convolution becomes convenient: convolution commutes with differentiation
+We're going to be finding extrema of the scale-normalized Laplacian of Gaussian and choosing them as salient points
 
-- this way we can just **filter with the laplacian of the gaussian**
-- this is just a filter
-- a circularly simmetric filter; this means that it can find features with invariance to rotation
+Now a property of convolution becomes convenient: convolution commutes with differentiation
 
-a nice thing about LOG is that the ratio at which we find features in different images is the same as the ration of the scales of the two images.
+- this way we can just **filter with the laplacian of the gaussian** instead of computing the gaussian-scale-space and then the derivative
+  - this is just a filter
+- a circularly simmetric filter; this means that **it can find features with invariance to rotation**
+  - the same pixels rotated are going to be weighted exactly the same by the filter
 
-- LOG exactly captures the concept of scale
-
-this detector finds blobl like features
+This detector finds blob-like features
 
 - ricordiamo che non ci interessa necessariamente che feature vengono trovate
 - l'importante è che il nostro detector trovi le stesse features in immagini diverse in modo tale da fare matching (repeatability)
 
-## DOG (Difference of Gaussians)
+![log](img/log.png)
 
-way more computationally efficient that the LOG
+- leggi attentamente i commenti nella slide
+- la stessa feature viene trovata a scala piccola quando la feature è piccola nell'immagine, e a scala grande quando è grande
+- il loro rapporto è simile al rapporto delle scale
 
-di nuovo le proprietà della convoluzione ci fanno comodo: stavolta utilizziamo la proprietà distributiva
+**LOG exactly captures the concept of scale**
 
-the difference of the Gaussian approximates the LOG function
+- by computing LOG of a gaussian scale space **we have the criterion for feature detection and scale selection we were looking for**
+- un'estremo in (x,y, sigma) nello scale space, identifica una feature in (x,y) nell'immagine originale con scala caratteristica pari a sigma
+  - in un'altra immagine la stessa feature probilmente verrebbe trovata in un'altra posizione e con una scala diversa
+  - le abbiamo trovate però entrambe automaticamente, senza fare cose come cambiare la detection window size! This is multi-scale feature detection
+  - computando un descrittore opportuno possiamo fare il matching
+
+### DOG (Difference of Gaussians)
+
+Lowe proposes to detect keypoints by seeking for the extrema of the DoG (Difference of Gaussian) function across the (x,y,sigma) domain
+
+- facciamo una convoluzione con un filtro che è la differenza tra due gaussiane (hence the name)
+- di nuovo le proprietà della convoluzione ci fanno comodo: stavolta utilizziamo la proprietà distributiva
+
+The DoG approximates the LOG function
 
 - the only difference is a scale factor
 - since we care only about finding extrema (and not absolute values) DOG is useful for our purposes
 
-Anche questo è circularly simmetric e quindi invariant to rotation
+Anche questo è circularly simmetric, e quindi **invariant to rotation**, e fa detection di **blob-like features**
 
-to probe 4 scales we need to compute 7 gaussian filtered images because we need to find extrema across the stack of filtered images
+**Way more computationally efficient than the LOG**
 
-**NB**: if we want more octaves we don't compute more gaussians, that would become computationally expensive because the larger the sigma the larger the window of the kernel becomes
+With LoG the more scales, the more LoG filtered (the filter being the laplacian of Gaussian) images we need to compute
 
-- once again, we use downsampling and keep using the same filters
+- the larger the scale becomes, the larger the kernel size, the more computationally expensive it becomes to compute a single layer
+
+With DoG, a single filtered image is computed by the difference of two gaussian filtered images with different sigmas
+
+- già questo mi toglie un laplaciano che mi sembra costoso
+
+Per produrre uno stack di DoG filtered images (in cui andiamo a cercare gli estremi) seguiamo quindi il seguente procedimento:
+
+- computiamo uno stack di Gaussian filtered images con vari sigma che useremo per fare le differenze
+- **computiamo solo una ottava**, ovvero i layer che vanno da sigma a 2sigma escluso
+  - If we want more octaves we don't compute more gaussians, that would become computationally expensive because the larger the sigma the larger the window of the kernel becomes
+- questo perchè la seconda ottava, che ha scala doppia, può essere ottenuta **riutilizzando le stesse guassian filtered images della prima ottava ma downsampled di un fattore 2**
+- questo significa che per computare lo Stack di DoG-filtered images per qualsiasi scala, **abbiamo bisogno solo di un'ottava di gaussian filtered images**
+  - questo risparmia un sacco di calcoli
+
+![computation_of_DoG](img/computation_of_DoG.png)
+
+Nota: To probe 4 scales we need to compute 7 gaussian filtered images, because we need to find extrema across the stack
+
+- so we need one more filtered image at the top and at the bottom to compare with
+- anche qua, we use downsampling and keep using the same filters
+
+### Extrema detection with DoG
+
+A point (x,y,sigma) is detected as a keypoint iff its DoG is higher than that of the 26 neighbours (8 at the same scale and 18=9+9 at the two nearby scales) in the (x,y,sigma) space.
+
+Gli extrema trovati sono tutti i massimi locali
+
+- come nel caso degli edges, noi desideriamo che questi locali siano sufficientemente forti
+- altrimenti queste features potrebbero essere dovute a rumore e/o non essere presenti nelle altre immagini (weak repeatability)
+- Extrema featuring weak DoG response turn out scarcely repeatable.
+
+**Weak Extrema can be pruned by thresholding the absolute value of the DoG**.
+
+- Lowe also notices that **unstable keypoints are found may be found along edges**, even though they feature a sufficiently strong DoG, and devises a further pruning step aimed at dealing with them
+
+---
+
+# Riassumendo multi-scale feature detection
+
+Our objective is to find correspondences of keypoints, pixels that can be easily matched in different images
+
+We've started with corners as our local feature to detect keypoints, but we've noticed that the Harris Corner Detector we use is not scale-invariant
+
+This is bad for two reasons:
+
+- we want to detect as many features as possibile in an image because this maximizes the number of points that we can try to find matches with
+- also, features remain present only at a certain range of scales
+  - if we detect features only at a certain scale, we have no guarantee that they will all be present in the other images aswell
+  - this means that we want to detect the features of an image at all possible scales because this maximizes our probability to find matches with all kinds of images
+
+Thus, corners are not a good feature to detect if we want to find as many matches as possible
+
+We want to be able to detect both large-scale and small-scale features. Consequently, as features exist across a range of scales, **we need criteria for both feature detection and optimal (aka characteristic) scale selection.**
+
+Detecting the same feature at different scales requires an additional step. Since large scale features have more details, their descriptor would be different from the descriptor of the matching smaller-scale feature in another image. To allow for the computation of a similar descriptor, large scale features need to be smoothed with a gaussian to filter out the unnecessary details
+
+The Gaussian Scale-Space is the right tool to smooth an image in order to progressively simplify its content.
+
+- think of it as a stack of the same image filtered by a gaussian with varying sigma (scale parameter)
+
+However, it neither includes any criterion to detect features nor to select their characteristic scale.
+
+- features exist across a range of scales within the Gussian Scale-Space
+- but where are they in this 3d-space? and what height (sigma/scale) should we choose?
+
+The LoG and DoG filters (detectors) answer the previous question
+
+- they produce a stack of filtered images at different scales (once again a 3d space)
+- the features are the extrema in this stack (answer to feature detection)
+- it was shown that corresponding features in different images (which are typically found at different coordinates in this 3d space) have a sigma proportional to the scale of the feature in the image, and their ratio is also similar to the ration of the scales of the features. Thus sigma can truly be thought as the cahracteristic scale of the feature (answer to scale selection)
+
+After finding these extrema, we prune the weak ones with a threshold beacause they aren't repeatable (they can't be found in other images)
+
+---
 
 # Scale and rotation invariance
 
-we need both the detector and the descriptor scale and rotation invariant
+Per adesso ci siamo concentrati sui detector, consideriamo ora i descriptor
 
-per adesso ci siamo concentrati sui detector, consideriamo ora i descriptor
+Once each keypoint has been extracted, **the surrounding patch is considered to compute its descriptor**
 
-to compute a descriptor that is scale invariant we need to compute it at the scale at which the feature was detected
+**We need both the detector and the descriptor scale and rotation invariant**
 
+- vogliamo che la stessa feature ruotata e/o ad una scala diversa possa essere comunque matchata
+- Noticamo che LoG e DoG sono scale invariant e rotation invariant
+  - le feature vengono trovate nella loro scala caratteristica
+  - i filtri sono circularly simmetric
+
+**To compute a descriptor that is scale invariant we need to compute it on the gaussian filtered image at the scale at which the feature was detected**
+
+- this is another reason why DoG is more practical than LoG, **we already have the gaussian filtered images to compute the descriptors with**
+- **we compute the descriptor at its scale**, in this way the same feature in different images will have a similar descriptor (**scale invariant descriptor**)
+  - the patch is taken from the stack image (L(x,y,sigma)) that correspond to its characteristic scale.
+  - **NB**: siccome con DoG ogni ottava subisce un downsampling, questo implementa anche la dynamic-window size necessaria affinchè il descriptor della stessa feature in immagini diverse veda più o meno gli stessi pixel
 - this is because we need the right amount of smoothing to make features similar in different images at different scales
 
-NB: the reason the DOG is more computationally efficient wrt the dog is because it has already at its disposal the gaussian filtered images at all the scales
+What about rotation invariance?
 
-what about rotation invariance?
+- we need to take into account the reference frame
+- to achieve rotation invariance **we need to make the descriptors reason with a reference frame that is oriented with the keypoint**
+- we can't use a global reference frame
 
-we need to take into account the reference frame
+To attain rotation invariance, a canonical (aka characteristic) patch orientation is computed, so that the descriptor can then be computed on a canonically-oriented patch (that is equal in different images).
 
-to achieve rotation invariance we need to make the descriptors reason with a reference frame that is oriented with objects, we can't use a global reference frame
+An intuitive way to define a local reference frame is to **define the x-axis of the objects as the direction of maximal change**
 
-an intuitive way to define a local reference frame is to define the x-axis of the objects as the direction of maximal change, considerando però non il gradiente di un singolo punto ma l'informazione di tutto il neighbourhood
+- considerando però non il gradiente di un singolo punto ma l'informazione di tutto il neighbourhood
+
+Each keypoint is going to have canonical orientation associated with computed as follows:
+
+- Given the keypoint, **the magnitude and orientation of the gradient are computed at each pixel within a surrounding patch of the associated Gaussian-smoothed image**
+- Then, an orientation histogram (with bin size equal to 10° -> 36 bins) is created by accumulating the contributions of the neighborhood
+– The contribution of each such pixel to its designated orientation bin is given by the gradient magnitude **weighted by a (spatial) Gaussian with sigma=1.5\*sigma_s**
+  - sigma_s denoting the scale of the keypoint
 
 ## Orientation Histogram
 
-we need to chood a bin size to quantize the gradient directions into bins for the histogram
+We need to choose a bin size to quantize the gradient directions into bins for the histogram
 
-let's increment the bins proportionally to the magnitude of the gradients
+- Lowe chose 36
 
-- this way uniform regions, that have small gradients with kind of random directions, dont' count much
+Let's increment the bins proportionally to the magnitude of the gradients
+
+- this way uniform regions, that have weak gradients with kind of random directions, dont' count much
 - we accumulate into the bins gradient magnitude
 
-we can compute the orientation of the keypoints
+**The canonical orientation of the keypoint is given by the highest peak of the orientation histogram**
+
+After this each keypoint has (x, y, sigma and canonical orientation information)
 
 slide 39 skip
 
@@ -291,57 +486,75 @@ slide 39 skip
 
 DoG and Sift are a good combo (best known and best working)
 
-**NB**: The descriptor is rotation and scale invariant because
+- DoG is the detector
+- Sift the descriptor
 
-- we consider the scale at which the feature was found
-- we consider the orientation of the neighbourhood found in the orientation histogram of the keypoint
+The Sift descriptor is computed as follows for each keypoint:
+
+- A 16x16 **oriented (along with the canonical orientation of the keypoint)** pixel grid is considered **at the scale they keypoint was found in**
+  - scale invariant descriptor because we're considering the grid at the right scale
+  - rotation invariant beacause the grid is oriented with the canonical orientation of the keypoint
+    - nella slide è una griglia upright per leggibilità ma è un quadrato sbilenco nella realtà
+- This is further divided into 4x4 regions (each of size 4x4 pixels) and a gradient orientation histogram is created for each region
+- Each histogram has 8 bins (i.e. bin size 45°)
+- **Il Descrittore è quindi un vettore di real values formato dal valore che hanno i bin di tutti i 16 (4x4) orientation histograms**
+  - la lunghezza di questo vettore è data da the number of regions times the number of histogram bins per region, i.e. 4x4x8 = 128.
+  - il vettore è composto da reali dato che accumuliamo nei bin gradient magnitudes che sono real values
+
+Gradients are rotated according to the canonical orientation of the keypoint.
+
+**NB**: The descriptor is rotation and scale invariant because:
+
+- we consider the pixel grid at scale at which the feature was found in the gaussian scale space
+- we orient the neighbourhood with the canonnical orientation found in the orientation histogram of the keypoint
 
 **NB**:
 
-- per calcolare l'orientamento della patch calcoliamo un orientation histogram con 36 bins
+- per calcolare l'orientamento del keypoint calcoliamo un orientation histogram con 36 bins
 - per calcolare gli orientation histograms dei blocchi 4x4 di sift utilizziamo 8 bins
 
-SIFT is a descriptors represented as a vector of 128 floats
+---
 
 # How do we establish correspondences given the descriptor vectors?
 
-it's a nearest neighbour problem
+It's a nearest neighbour problem with datapoints being the sift descriptors (128 element long vectors)
 
-if consider only the nearest neighbour we're gonna be matching every feature in the source image to a feature in the target image
+- for each keypoint in I1 we find the keypoint in I2 such that the distance between their SIFT descriptors is the smallest (Nearest Neighbour Search).
+
+Attenzione:
+
+If we consider only the nearest neighbour **we're gonna be matching every feature in the source image to a feature in the target image**
 
 - but this is not correct, we might even have a larger amount of features in the source image than in the target image
+- some keypoints in source may not have a corresponding one in target
 
-for this reason we threshold the distance
+For this reason **we threshold the maximum distance that a match can have for the keypoint to not be rejected**
 
-but what threshold do we choose?
+But what threshold do we choose?
 
-- it's not easy to reason about (absolute) distances in highdimensional spaces
-
-- the ratio of the 2 NN is bounded by one
-  - it's easier to threshold this ratio since it's a value [0, 1]
+- it's not easy
+- notiamo che the ratio of the 2 NN is bounded by one
+  - il secondo è lontano minimo tanto quanto il primo o più
+- it's easier to threshold this ratio since it's a value \[0, 1]
   - Lowe's ratio
-
-d_NN/d_2NN <= 0.1; questo significa che il miglior match deve essere 10 volte migliore del secondo miglior match
-
-Con una soglia alta tipo 0.9 trovi tanti match, ma la maggior parte sono **falsi positivi**.
-
-Con 0.9 Vuol dire: "Accetto il match se il migliore è **almeno solo il 10% migliore** del secondo" - una condizione molto lasca!
+  - **we would like for the ratio to be low**
+    - nn should be close, and 2-nn should be somewhat far-away
+    - this means that the nn and the 2-nn are noticably different and it's not ambiguous which would be a better match
+  - Lowe shows that T=0.8 may allow for rejecting 90% of wrong matches while missing only 5% of correct ones
+    - d_nn/d_2nn <= 0.8
 
 ## Efficient NN-search
 
-we borrow techniques from database theory
+Per trovare il nearest-neighbour di una feature, la maniera ingenua è calcolare le distanze rispetto a tutti gli altri punti nell'altra immagine in cui vogliamo trovare la corrispondenza
 
-we use indexes
+- this has linear complexity in the size of S (number of features in the other image)
+- oftentimes, turns out exceedingly slow
+
+Thus, efficient indexing techniques borrowed from database theory are deployed to speed-up the NN-search process
 
 - in particular a k-d tree that is o(log n)
-- this doesn't work with sift because the dimensionality is too high
+  - this doesn't work with sift because the dimensionality is too high
 - variant of k-d tree called BestBinFirst is an indexing technique that deals with high dimensional space
 - however, unlike the k-d tree (that is equivalent to the exhaustive search), BBF is an approximate search, **it might find wrong correspondences!**
 
-tipically fast means approximate (no free lunch D:)
-
-```
-chiedi per soluzioni a lab
-
-slide
-```
+Tipically fast means approximate (no free lunch D:)
