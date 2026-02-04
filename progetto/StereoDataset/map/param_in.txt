@@ -1,5 +1,5 @@
-ref im1.pgm
-groundtruth disp1.pgm
+ref imR.ppm
+groundtruth groundtruth.pgm
 
 disp_min 0
 disp_max 29
