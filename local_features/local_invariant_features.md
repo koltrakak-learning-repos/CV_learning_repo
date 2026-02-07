@@ -238,9 +238,10 @@ Once each keypoint has been extracted, **the surrounding patch is considered to 
 **We need both the detector and the descriptor scale and rotation invariant**
 
 - vogliamo che la stessa feature ruotata e/o ad una scala diversa possa essere comunque matchata
-- Noticamo che LoG e DoG sono scale invariant e rotation invariant
+- Notiamo che LoG e DoG sono scale invariant e rotation invariant
   - le feature vengono trovate nella loro scala caratteristica
-  - i filtri sono circularly simmetric
+  - le feature vengono trovate anche ruotate
+    - i filtri sono circularly simmetric
 
 **To compute a descriptor that is scale invariant we need to compute it on the gaussian filtered image at the scale at which the feature was detected**
 
@@ -262,11 +263,12 @@ An intuitive way to define a local reference frame is to **define the x-axis of 
 
 - considerando però non il gradiente di un singolo punto ma l'informazione di tutto il neighbourhood
 
-Each keypoint is going to have canonical orientation associated with computed as follows:
+Each keypoint is going to have canonical orientation associated with it computed as follows:
 
 - Given the keypoint, **the magnitude and orientation of the gradient are computed at each pixel within a surrounding patch of the associated Gaussian-smoothed image**
 - Then, an orientation histogram (with bin size equal to 10° -> 36 bins) is created by accumulating the contributions of the neighborhood
-– The contribution of each such pixel to its designated orientation bin is given by the gradient magnitude **weighted by a (spatial) Gaussian with sigma=1.5\*sigma_s**
+– The contribution of each such pixel to its designated orientation bin is given by the **gradient magnitude**
+  - the contributions are also weighted by a (spatial) Gaussian with sigma=1.5\*sigma_s
   - sigma_s denoting the scale of the keypoint
 
 ## Orientation Histogram
@@ -282,7 +284,7 @@ Let's increment the bins proportionally to the magnitude of the gradients
 
 **The canonical orientation of the keypoint is given by the highest peak of the orientation histogram**
 
-After this each keypoint has (x, y, sigma and canonical orientation information)
+After this each keypoint has (x, y, sigma, and canonical orientation information)
 
 slide 39 skip
 
@@ -295,10 +297,10 @@ DoG and Sift are a good combo (best known and best working)
 
 The Sift descriptor is computed as follows for each keypoint:
 
-- A 16x16 **oriented (along with the canonical orientation of the keypoint)** pixel grid is considered **at the scale they keypoint was found in**
+- A 16x16 **oriented (along with the canonical orientation of the keypoint)** pixel grid is considered **at the level in the stack in associated with scale the keypoint was found in**
   - scale invariant descriptor because we're considering the grid at the right scale
   - rotation invariant beacause the grid is oriented with the canonical orientation of the keypoint
-    - nella slide è una griglia upright per leggibilità ma è un quadrato sbilenco nella realtà
+    - nella slide è una griglia upright per leggibilità, ma è un quadrato sbilenco nella realtà
 - This is further divided into 4x4 regions (each of size 4x4 pixels) and a gradient orientation histogram is created for each region
 - Each histogram has 8 bins (i.e. bin size 45°)
 - **Il Descrittore è quindi un vettore di real values formato dal valore che hanno i bin di tutti i 16 (4x4) orientation histograms**
@@ -309,13 +311,13 @@ Gradients are rotated according to the canonical orientation of the keypoint.
 
 **NB**: The descriptor is rotation and scale invariant because:
 
-- we consider the pixel grid at scale at which the feature was found in the gaussian scale space
+- we consider the pixel grid at the scale at which the feature was found in the gaussian scale space
 - we orient the neighbourhood with the canonnical orientation found in the orientation histogram of the keypoint
 
 **NB**:
 
 - per calcolare l'orientamento del keypoint calcoliamo un orientation histogram con 36 bins
-- per calcolare gli orientation histograms dei blocchi 4x4 di sift utilizziamo 8 bins
+- per calcolare gli orientation histograms dei blocchi 4x4 di sift descriptor utilizziamo 8 bins
 
 ---
 
@@ -362,3 +364,39 @@ Thus, efficient indexing techniques borrowed from database theory are deployed t
 - however, unlike the k-d tree (that is equivalent to the exhaustive search), BBF is an approximate search, **it might find wrong correspondences!**
 
 Tipically fast means approximate (no free lunch D:)
+
+Finding some wrong correspondences isn't much of a problem thanks to algorythms like RANSAC that allow us to ignore the wrong matches and use the rest
+
+- for example we can have some wrong matches and still compute an accurate homography with the correct ones
+
+---
+
+# Riassumendo sift description and matching
+
+Abbiamo che le feature individuate con DoG sono scale-invariant e rotation invariant
+
+Vogliamo anche che i descriptor siano scale-invariant e feature invariant
+
+- vogliamo che la stessa feature ruotata e/o ad una scala diversa possa essere comunque matchata
+
+Per avere un descriptor scale invariant
+
+- computiamo il descriptor considerando l'intorno del salient point alla scala caratteristica in cui il salient point è stato trovato (nello stack di gaussian filtered images)
+
+Per avere un descriptor rotation invariant, la patch che si considera deve essere orientata secondo la canonical orientation del keypoint
+
+- questa canonical orientation viene calcolata considerando un ulteriore intorno del keypoint
+- per ogni punto di questo intorno si calcola il gradiente e si computa un orientation histogram sommando le varie gradient magnitudes
+- la canonical orientation del keypoint è data dal picco dell'orientation histogram
+
+Il Sift descriptor a questo punto si calcola prendendo una griglia 16x16 orientata con la canonical orientation
+
+- si calcolano 4x4 orientation histograms con 8 bin
+- si ottiene un vettore di reali lungo 128
+
+A questo punto il matching diventa un NN-problem
+
+- il match di un salient point, viene cercato tra gli m salient point di un'altra immagine; il punto con un descrittore che risulta il nearest-neighbour sarà il match
+- aggiungiamo una threshold alla distanza massima che un match può avere, altrimenti tutti i punti avrebber un match anche quando nell'altra immagine quel salient point non esiste
+- non consideriamo una threshold assoluta ma piuttosto una relativa tra d_nn e d_2nn
+- vogliamo che d_nn / d_2nn sia sufficentemente piccolo dato che vogliamo che il nn sia nettamente migliore del secondo, in questo modo non si ha ambiguità

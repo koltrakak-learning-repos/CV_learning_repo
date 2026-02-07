@@ -1,7 +1,9 @@
 Finding correspondences between two or more images is a key problem in CV
 
 - there are many CV tasks in which finding correspondences is the main problem
-- stereo correspondece problem
+- stereo correspondence problem
+- instance detection di una template image in una scena
+  - date sufficienti corrispondenze possiamo costruire l'omografia che mappa gli angoli del template da template a scena
 - image mosaicing
   - ho bisogno di trovare almeno 4 corrispondenze tra due immagini in modo tra computare un omografia che mi fa passare dall'una all'altra
   - ottenuta l'omografia posso costruire un'immagine più grande contenente
@@ -111,7 +113,7 @@ Why is this a good cornerness function?
 Improves moravec
 
 - continuous formulation of moravec
-- better because detects corners more reliably since it doesn't check only 8 directions
+- better because detects corners more reliably since it doesn't check only 8 directions (rotation invariance of the corner)
 
 (used by opencv for finding calibration points)
 
@@ -191,3 +193,63 @@ The Harris corner detection algorithm can thus be summarized as follows:
     - vogliamo corner forti
 3. Within the previous set, detect as corners only those pixels that are local maxima of C (NMS).
     - vogliamo corner e non punti vicini ai corner
+
+# Riassumendo
+
+Finding correspondences between two or more images is a key problem in CV
+
+Correspondences are pixels in multiple images that are the projection of the same 3d point
+
+Establishing correspondences may be difficult as **homologous points may look different in the different images**
+
+The process for finding correspondences includes three steps:
+
+1. **Bisogna detectare salient points**
+    - in maniera repetable: in modo che gli stessi salient points spuntino anche nelle altre immagini se presenti
+    - detectare salient points informativi, il cui intorno può produrre un descriptor distinto per il matching
+2. **Compute a local “description” to recognize salient points across images**
+3. **Matching descriptors between images**
+
+**A good salient point is one where its neighbourhood is a good description that allows us to find the coorrespondence**
+
+an edge is NOT a good keypoint
+
+- along the gradient direction there is a strong change
+- **along the orthogonal direction there is little change**
+  - along an edge multiple pixels could be a match
+
+Corners invece sono dei buon keypoint
+
+L'idea di base per trovare i corner è quella di moravec
+
+- consideriamo la differenza che c'è tra l'intorno di un punto e l'intorno dei suoi 8 punti adiacenti
+- se la differenza è sempre alta, vuol dire che un significant change in all directions -> corner
+
+Harris corner detector improves Moravec with a continuous formulation that is more robust (detects corners better)
+
+- it uses infinitesimal shifts in all directions
+- harris error is the difference between the neighbourhoods
+- since the shift is infinitesimal, the error of a single pixel can be represented with the dot product between the gradient of that position with the shfit
+  - quanto cambio spostandomi * quanto mi sono spostato
+- Da questa osservazione si raggiunge una formulazione dell'harris error in cui è presente la structure matrix M
+  - nella formula solo M dipende dall'immagine, il resto sono shift
+  - riassume la struttura dell’immagine attorno al punto di cui si vuole considerare la cornerness
+    - contiene le sue derivate parziali
+- studiando gli autovalori di M si capisce se siamo in un corner, edge o in una zona uniforme
+  - entrambi piccoli = zona uniforme
+  - se solo il primo è grande = edge
+  - se entrambi grandi = corner
+- il larger eigenvector rappresenta la direzione di maximal change, l'altro una direzione perpendicolare
+  - se anche la direzione di maximal change varia poco, siamo in un area uniforme
+  - se variamo tanto nella direzione di maximal change, ma non nella direzione di minimal change -> siamo su un edge
+  - altrimenti siamo in un corner
+
+The Harris corner detection algorithm can thus be summarized as follows:
+
+- Compute C=corner_function() at each pixel
+  - richiede costruire M e quindi richiede calcolare le derivate parziali di ogni punto
+  - non calcoliamo gli autovalori che è costoso, piuttosto usiamo la cornerness function di harris
+- Select all pixels where C is higher than a chosen positive threshold (T).
+  - vogliamo corner forti
+- Within the previous set, detect as corners only those pixels that are local maxima of C (NMS).
+  - vogliamo corner e non punti vicini ai corner

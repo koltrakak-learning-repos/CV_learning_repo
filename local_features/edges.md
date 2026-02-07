@@ -1,8 +1,11 @@
 **Segmentation can be applied when object of interest and background are clearly diverse!**
 
+- in this cases the objects in the image can be segmented out and analyzed
+
 But in many applications this is not true! What do we do then?
 
 - rely on local features directly extracted from the input gray-scale/colour image!
+  - with edges we can compute contours of objects and fill them in
 - local features are special **points in the image that convey some information**
   - i'm guessing they're called local because the features are computed looking at the neighbourhood
 
@@ -176,3 +179,53 @@ it's not implemented well
 manca un gaussian filter iniziale per rimuovere il rumore
 
 - ricorda che sobel serve solo a computare le derivate
+
+---
+
+# Riassumendo
+
+segmentation may fail when the environment isn't super controlled (intensities / colors aren't that much different)
+
+in these cases relying on local features like edges can still allow us to achieve our goal of extracting information from an image
+
+- es. measurements
+
+Edges are pixel that are in between uniform regions of the image of different intensities
+
+We can compute edges by finding extremas of the gradient of the image
+
+- edges are strong changes in intensity in whatever direction
+
+The gradient of an image can be computed by convolution with two filters (one for every direction)
+
+When computing the derivatives of the gradient we have to be careful of noise
+
+- the spurious variations in pixel intensities caused by noise will be detected as edge pixels
+- we must first get rid of noise and then compute the derivatives
+
+We can get rid of noise and compute the derivatives in one step with a smooth derivative
+
+- this is a filter that does a Difference of means
+- the means are performed in the direction to differentiation so edges aren't blurred
+- Sobel filter
+
+After computing the gradient we need to find the peaks of this function, the local maxima
+
+- vogliamo i peaks del gradiente, è li che sono posizionati gli edges
+- assottigliamo gli edges che risultano spessi dopo sobel
+
+**NMS happens along the gradient direction**
+
+- altrimenti elimineremmo pixel appartenenti ad un vertical/horizontal edge adiacenti ad un edge pixel
+
+NMS non applica thresholding, potrei avere dei peak deboli che non vengono eliminati da NMS
+
+After NMS we apply thresholding
+
+Canny edge detector is basically a gaussian filter that removes noise and then computing the gradient of the image, with NMS and thresholding
+
+Canny uses smart thresholding
+
+- it uses two thresholds, a high one and a low one
+- pixels higher than the lowe threshold are considered edges if they are connected to pixel edges that are higher than the high one
+- this deals with edge streaking even when lighting is very uneven
