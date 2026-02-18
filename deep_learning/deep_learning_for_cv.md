@@ -159,8 +159,10 @@ in CNNs we have a sequence of conv layers
 
 - the first layer detects **very local features** because the receptive field is very small
 - the next layers depends on the receptive fields of the previous layers
+  - i layer successivi considerano attivazioni che riassumono la receptive field in una posizione nel layer precedente
+  - il receptive field di un layer successivo considera più attivazioni e quindi è come se considerasse un receptive field più grande nel layer precedente
 
-**moving across the layers makes the receptive field grow** because the feature maps shrink after every conv layer
+**moving across the layers makes the receptive field grow**
 
 - the first layers detect very local features
 - moving away from the initial layers makes the receptive field grow, this means that the kernels of the deeper layers detect larger and larger features
@@ -228,10 +230,10 @@ Uno non è migliore dell'altro
 
 # Final CNN architecture
 
-The genral pattern, as we move throug conv layer to conv layer, is that:
+The general pattern, as we move throug conv layer to conv layer, is that:
 
 - the spacial size decreases
-  - larger receptive field
+  - larger receptive field as we move thorugh the conv layers
   - we consider more global/general features in the deeper layers
 - while the depth increases
   - we consider more features
@@ -240,8 +242,9 @@ The genral pattern, as we move throug conv layer to conv layer, is that:
 We flatten the final activations and process them with one or more **FC layers**
 
 - now that the size of the input image is small this is feasible without too many parameters
+- ricorda global average pooling per gestire i molti canali
 
-The final layer is the classifier, the previous layers are all feature extractors
+The final layer is the **classifier**, the previous layers are all **feature extractors**
 
 - the final layer that does the classification is linear since we've done all the feature extraction and we just need to linearly discriminate the classes
 
@@ -252,9 +255,24 @@ Il penultimo vettore (prima dell'output finale del classificatore) viene chiamat
 **NB**: sembra che una buona idea sia mettere gli FC layers alla fine della rete dopo che si sono computate delle feature generali con vari conv layers
 
 - innanzitutto, gli fc layers alla fine diventano fattibili dato che l'input è stato shrinkato a sufficenza da non richiedere un numero ridicolo di parametri
-  - il numero di canali tende a crescere, però di solito si applica global average pooling
+  - (il numero di canali tende a crescere, però di solito si applica global average pooling)
 - more importantly, gli FC layers hanno un ruolo di ricombinazione delle feature globali detected alla fine dei layer convoluzionali
   - (ho delle attivazioni di una bocca, due occhi, un naso -> ricombino per ottenere un'attivazione di un volto umano)
+
+Introduciamo anche come termini:
+
+- backbone
+  - la parte della rete che fa representation learning e quindi che **impara feature utili**
+- (classification) head
+  - la parte della rete che produce la produzione finale (task-specific)
+
+Distinguere queste due parti è utile considerando **transfer learning**
+
+- la backbone può essere pretrained, riconosce feature utili per una varietà di task
+- possiamo allenare una head per i nostri obiettivi task-specific
+  - la head impara a ricombinare le feature riconosciute dal backbone per raggiungere i nostri scopi
+
+vedi meglio dopo
 
 ## CNN parameter and FLOP count
 
@@ -264,17 +282,16 @@ A network architecture with the same performance as another one, but with fewer 
   - faster training and inference
 - less model capacity and less prone to overfitting
 
-conv layers
+**conv layers**
 
 - require less parameters
 - require more FLOPs since they process big tensors
 - C_out * (C_in\*H_k\*W_k) parameters
   - numero di kernel * dimensione del singolo kernel
-- To compute EACH OUTPUT VALUE we need to compute a MAC (Multiply And Accumulate) per each parameter, which amounts to 2N Flops
-  - (C_out\*H_out\*W_out) \* (C_in\*H_k\*W_k) \* 2
-  - ogni pixel dell'immagine di output viene computato dalla convoluzione per un kernel, questo richiede una moltiplicazione e una somma, e viene fatto per C_out kernel
+- (H_out\*W_out) \* ( C_out \* (C_in\*H_k\*W_k) \* 2 ) FLOPs
+  - ogni pixel dell'immagine di output viene computato dalla convoluzione per un kernel, questo richiede una moltiplicazione e una somma, e viene fatto per C_out immagini di output
 
-FC layers
+**FC layers**
 
 - require more parameters
 - require less FLOPs
@@ -286,8 +303,6 @@ FC layers
 **OSS**: solitamente la definizione di nuove architetture è incrementale, nel senso che si tende a mantenere tutto uguale se non per alcune modifiche che si vuole dimostrare siano migliorative
 
 - altrimenti non si saprebbe a cosa ricondurre un aumento delle performance
-
----
 
 # esempi di reti
 
@@ -318,7 +333,7 @@ the input images had different sizes
 
 utilizza model (prediction) ensembling dato alla rete più input per immagine in ingresso
 
-notion of a stage
+**notion of a stage**
 
 - 3 conv layer di file con kernel 3x3 sono equivalenti a un singolo conv layer con kernel 7x7
 - tuttavia, 3 conv layer separati sono meglio dato che abbiamo meno parametri e flop (scala con n^2) e introduciamo più non linearità il che aumenta l'espressività
@@ -329,34 +344,42 @@ vgg were able to go very deep with their network (19 layers)
 
 it showed that going deep helps performance (if you can train the network)
 
-it also showed how to build deep networks with a very regular design
+it also showed how to build deep networks with a very **regular design**
 
-another good idea was **doubling the cannels after every pooling layer**
+- 3x3 conv layers with S=1, P=1
+  - padding preserva la dimensione dell'immagine di output
+- 2x2 max-pooling, S=2, P=0
+- \#Filters (\#channels) double after every pool
+  - quando shrinkiamo compensiamo con più profondità
 
-- quando shrinkiamo compensiamo con più profondità
+Idea of **stages**: a chain of layers that process activations at the same spatial resolution (stessa dimensione dell'input)
 
-infine, idea of **stages**
-
-- perchè hanno senso?
+- (conv-conv-pool, conv-conv-conv-pool and conv-conv-conv-conv-pool)
 - stesso motivo di alexnet
-- abbiamo meno computazione e introduciamo più non linearità
-- A stage requires more memory to store the activations, though.
+- potremmo utilizzare un'unica convoluzione con un receptive field più grande...
+- ... ma, così facendo, abbiamo meno parametri, FLOPs e introduciamo più non linearità
 
-vgg-16 -> 16 numero di learnable layers
+VGG-16 -> 16 numero di learnable layers
+VGG-19 -> ha 19 learnable layers
 
-siccome questa archietttura è molto profonda, è suscettibile all'instabilità del gradiente durante il training
+Siccome questa archietttura è molto profonda, è suscettibile all'instabilità del gradiente durante il training
 
 - per risolvere il problema hanno sfruttato, inizialmente, tecniche di pretraining per inizializzazione della rete
 - in seguito si sono poi scoperte tecniche di inizializzazione che funzionano anche senza fare pretraining con modelli meno profondi
 
----
-
 # Global Average Pooling
 
-we've seen that most of the parameters of a network reside at the interface between the last conv activation and the first fc layer
+We've seen that most of the parameters of a network reside at the interface between the last conv layer's activations and the first fc layer
 
-global average pooling is a way to reduce the number of these parameters
+Global average pooling is a way to reduce the number of parameters (and thus the FLOPs) at this interface
 
-just maxpool across the channels
+- the last conv layer produces many small activation maps (something like 512\*3\*3)
+- if we don't do anything we flatten this activations into a vector and FC with every neuron of the next FC layer
+- to reduce the number of parameters we just do a avg-pool/max-pool across the channels
+  - this way the flattened input vector of activations becomes 512 elements long instead of 512\*3\*3
 
-ha senso, ci interessa solo la presenza o meno delle feature generali non tanto dove siano
+Ha senso
+
+- abbiamo detto che gli FC layers hanno un ruolo di ricombinazione delle feature globali detected alla fine dei layer convoluzionali
+  - globali perchè gli ultimi conv layer hanno un receptive field grande
+- **ci interessa solo la presenza o meno delle feature globali**, non tanto dove siano
