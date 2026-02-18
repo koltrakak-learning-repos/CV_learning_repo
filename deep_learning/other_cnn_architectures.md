@@ -141,9 +141,29 @@ architecture that is amenable to run on mobile devices (light-weight)
 
 they use grouped convolution
 
-rather than having all kernels process all channels, we split the kernels into groups that process a subset of channels
+- rather than having all kernels of a conv layer process all channels of the input image, **we split the kernels into groups that process a subset of channels**
+  - es: input con 12 canali e kernel divisi in 4 gruppi -> il primo gruppo processa i primi 3 canali, il secondo i secondi 3, ...
+  - ogni kernel ha un quarto della profondità (un quarto dei parametri)
+- why? cheaper in termini di parametri e FLOPs (amenable for mobile devices)
 
-why? cheaper
+## Depthwise separable convolution
+
+versione estrema di grouped covolution in cui abbiamo tanti gruppi quanti canali
+
+- ogni kernel processa solo un canale
+
+Standard convolutions used in CNNs combinano le attivazioni sia spazialmente (receptive window) che in profondità (kernel 3d che considerano i canali di input)
+
+Con depthwise separable convolution spezziamo in due il processo
+
+- facciamo prima una depthwise convolution; ovvero, una grouped convolution con un numero di gruppi pari al numero di canali di input
+  - solo spaziale
+- poi facciamo una pointwise convolution; una convoluzione con un kernel C\*1\*1
+  - combiniamo gli output spaziali (canali processati separatamente dal layer precedente) considerando la profondità
+
+è importante combinare sia spazialmente che across channels per non perdere expressive power
+
+- con depthwise separable convolution lo facciamo in maniera più lightweight
 
 mobile net v2 è una variante che non ci interessa -> skip da slide 46
 
