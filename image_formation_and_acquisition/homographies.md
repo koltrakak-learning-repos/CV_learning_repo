@@ -91,6 +91,20 @@ Should we both rotate the camera about the optical center and change the intrins
 
 we'll see later why we care about homographies
 
+### Esempi di omografie
+
+Ricorda che due immagini della stessa scena planare sono collegate da un'omografia
+
+Se riesco a stimare l'omografia tra queste due immagini tramite delle corrispondenze, allora posso usare un'omografia per applicare/rimuovere una deformazione prospettica
+
+- se ho una query image che voglio spalmare sopra ad un oggetto in prospettiva su una scena
+  - prende le coordinate dei bordi della query image, le associo alle coordinate dei bordi dell'oggetto nella target image, stimo l'omografia
+  - applicando l'omografia alla query image applico la deformazione prospettica
+
+- se ho un oggetto in prospettiva
+  - posso stimare un omografia verso una scena parallela alla camera associando agli ancogli dell'oggetto degli angoli di un rettangolo
+    - applicando l'omografia rimuovo la deformazione prospettica
+
 ### Estimating homographies
 
 Quanto descritto sopra, sembra indicare che possiamo calcolare esattamente le omografie...
