@@ -105,6 +105,12 @@ Se riesco a stimare l'omografia tra queste due immagini tramite delle corrispond
   - posso stimare un omografia verso una scena parallela alla camera associando agli ancogli dell'oggetto degli angoli di un rettangolo
     - applicando l'omografia rimuovo la deformazione prospettica
 
+- se voglio fare instance detection
+  - stimo l'omografia tra template e target facendo detection e matching dei keypoints
+    - uso RANSAC per stimare un omografia robusta anche in presenza di match sbagliati
+  - con l'omografia stimata posso mappare qualsiasi punto del template nella target image
+    - ad esempio, posso vedere dove gli angoli del template vengono rimappati per disegnare una detection window dell'istanza trovata
+
 ### Estimating homographies
 
 Quanto descritto sopra, sembra indicare che possiamo calcolare esattamente le omografie...
