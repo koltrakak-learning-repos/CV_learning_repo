@@ -104,8 +104,8 @@ con qualche passaggio otteniamo la forma lineare
 
 con qualche altro passaggio otteniamo la forma matriciale in cui otteniamo le image coordinates dalle 3d coordinates
 
-- tutti i vettori sempre i projective coordinates
-- matrice 4x3 perchè vogliamo usare il vettore di coordinate 3d (4x1 in projective space)
+- tutti i vettori sempre in projective coordinates
+- matrice 3x4 perchè vogliamo usare il vettore di coordinate 3d (4x1 in projective space)
 
 ![perspective_projection_in_projective_coordinates](img/perspective_projection_in_projective_coordinates.png)
 
@@ -326,3 +326,43 @@ Successivamente, la matrice degli intrinseci maps the continuous (distorted) ima
 # Image formation flow
 
 ![image_formation_flow](img/image_formation_flow.png)
+
+---
+
+# Riassumendo
+
+- ragionando con projective coordinates
+  - perspective projection diventa una trasformazione lineare
+    - usiamo la formula che già conosciamo e moltiplichiamo tutto per z
+  - possiamo rappresentare punti all'infinito e come vengono proiettati nell'immagine
+
+- oltre a projective coordinates abbiamo bisogno di definire
+  - una rototranslation da WRF a CRF
+    - noi riusciamo a fare misurazioni solo in un RF che ci conviene
+    - ma perspective projection assume CRF coordinates
+  - una digitalizzazione da coordinate 2d continue a discrete
+    - le immagini continue non esistono
+
+- intrinseci sono una matrice 3x3
+  - contiene le informazioni sulla camera:
+    - focal length
+    - pixel size
+    - offset
+  - 4 parametri
+
+- estrinseci
+  - rototranslation tra WRF a CRF
+  - matrice 4x4
+  - 6 parametri
+    - 3 rotation vectors
+    - 3 translations
+
+- perspective projection non è valido se non eliminiamo la distorsione introdotta dalle lenti
+  - le lenti non sono thin e quindi introducono una distorsione non lineare
+  - modelliamo lense distortion come un warping che mappa undistorted in distorted
+    - le coordinate considerate sono continuous image coordinates
+    - modelliamo la lense distortion in maniera tale che avvenga prima della digitalizzazione
+  - le coordinate undistorted vengono moltiplicate per distorsione radiale e shiftate per distorsione tangenziale
+    - aggiungiamo ai parametri della PPM i parametri per questi due tipi di distorsione che dipendono dalla lente
+
+- con PPM e lense distortion abbiamo il nostro image formation flow finale

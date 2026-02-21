@@ -109,6 +109,8 @@ HSI è spesso più comodo in quanto detangled
 
 - potrebbe quindi essere necessario trasformare l'immagine catturata dalla camera (RGB) in un altro colour space
 
+**CIELab color space**
+
 RGB e HSI sono dei colour space in cui le distanze tra colori non corrispondono a quanto i colori si assomigliano effettivamente
 
 - se ho tre colori c1, c2, c3, e c1-c2 è una distanza uguale a c1-c3 non è detto che c2 sia percepito tanto simile a c1 quanto c3 o viceversa

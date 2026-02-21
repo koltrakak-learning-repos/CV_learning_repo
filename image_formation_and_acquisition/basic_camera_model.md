@@ -202,10 +202,10 @@ All the epipolar lines in an image meet at a point called **epipole**
 each camera has its own epipole and epipolar lines depending on which camera you're using to estimate depth
 
 - se voglio conoscere la profondità di un pixel nell'immagine sinistra, andrò a cercare la corrispondenza nell'immagine destra
-- la camera destra sarà quindi quella che sto usando per stimare la profondità, ed essa avrà associata un'epipolar line in cui risiede la corrispondenza e un epipolo
+- la camera destra sarà quindi quella che sto usando per stimare la profondità, ed il pixel nell'immagine sinistra avrà associata un'epipolar line nell'immagine destra in cui risiede la corrispondenza, e un epipolo
 - se avessi usato la camera sinistra per stimare la profondità, epipolo e linea sarebbero stati diversi
 
-Un epipolar line è quindi associata ad un pixel e l'image plane dell'altra camera
+Un epipolar line è quindi associata ad un pixel nell'image plane dell'altra camera
 
 - Epipolar line (associated with p_L in pi_R)
 
@@ -247,6 +247,7 @@ considerazioni preliminari:
 The vanishing point can be determined by the intersection between the image plane and the line parallel to the given one and passing through the optical centre.
 
 - copia la linea 3d, falla passare per l'optical centre, e vedi dove interseca il piano dell'image plane
+- (tutti gli image point si trovano vedendo dove il segmento che unisce punto 3d e optical centre interseca l'image plane, ma per un punto all'infinito questo segmento è parallelo alla linea 3d)
 
 **Proprietà**: linee parallele nel mondo 3d, risultano nello stesso vanishing point nell'immagine
 
@@ -402,3 +403,33 @@ We can also use a **focusing mechanism** that changes the distance of the lense 
 - **possiamo continuare ad usare perspective projection per capire come 3d point vengono mappati in punti 2d**
 
 **NB**: If the image is out of focus, perspective projection doesn't apply. But this case doesn't concern us because we must make sure that we work with focused images
+
+---
+
+# Riassunto
+
+- usiamo una pinhole camera che definisce perspective projection
+  - CRF ha origine nell'optical centre
+  - IRF ha origine nel centro dell'immagine (piercing point)
+
+- con una sola camera perdiamo l'informazione di profondità
+  - nozione di scala, dimensione apparente di un oggetto nell'immagine
+
+- se vogliamo la profondità di un pixel abbiamo bisogno di una stereo camera
+  - standard stereo geometry definisce due CRF che rappresentano due punti 3d in maniera identica se non per una differenza pari alla baseline della coordinata x
+  - P_l - P_r = \[b, 0, 0\]
+
+- se non abbiamo standard stereo, siamo nel caso della geometria epipolare
+  - una epipolar line è una linea nell'immagine target associata ad un punto nell'immagine di riferimento
+  - in standard stereo, le epipolar line sono sempre orizzontali; nel caso generale sono oblique (search space sempre 1d)
+  - tutte le epipolar line in un immagine target convergono in un epipolo: proiezione dell'optical centre dell'altra camera nell'image plane target
+
+- la geometria standard è quella più comoda è quindi effetuiamo un warping per trasformare le immagini come se fossero state catturate da una geometria stereo. Rectification
+
+- vanishing point è l'image point corrispondente all'infinito di una linea 3d
+  - linee 3d parallele hanno lo stesso vanishing point
+  - il vanishing point si ottiene traslando la linea 3d nell'optical centre e vedendo dove interseca l'image plane
+
+- lenti mi permettono di catturare più luce ma definiscono una DOF in cui gli oggetti appaiono a fuoco definita dal thin lense model
+  - se gli oggetti nella scena sono ad una distanza permessa dalla DOF, allora gli oggetti sono a fuoco e continua a valere perspective projection
+  - per aumentare la DOF posso usare un diaframma, che mi rimpicciolisce i circles of confusion, con un tradeoff di longer exposure times; oppure posso usare dei focusing mechanisms che mi cambiano la effective focal length
