@@ -206,6 +206,7 @@ I calcoli per trovare le omografie sono abbastanza facili (guarda dalle slide)
 - costruire le camere virtuali consiste nel modificare le PPM di entrambe le camere in modo che:
   - abbiano gli stessi parametri intrinseci
   - siano allineate, ovvero stessa rotation rispetto al WRF originale (CRF della camera sinistra)
+    - consideriamo come primo vettore di rotazione in R_new, il vettore che unisce i centri nelle due camere (baseline vector)
     - una volta allineate, è facile calcolare la translation della camera destra virtuale rispetto al WRF (che è rimasto quello vecchio)
   - Le nuove PPM sono:
     - Anew \[Rnew 0\] per la new PPM_l
@@ -214,6 +215,14 @@ I calcoli per trovare le omografie sono abbastanza facili (guarda dalle slide)
 - Both cameras undergo a rotation about the optical center and a change of intrinsics
   - sappiamo che la trasformazione che mappa le immagini delle vecchie camere nelle immagini delle nuove camere è un'omografia, e sappaimo anche calcolarla
   - siccome questo è un warping, esprimiamo l'omografia al contrario, ovvero calcoliamo l'omografia che mi fa passare da rectified image ad unrectified image
+
+- le immagini catturate da una camera stereo hanno questo ciclo di vita:
+  - catturiamo le immagini non rettificate
+  - eliminiamo la lense distortion con i parametri già stimati
+  - applichiamo le rectification homographies
+    - diverse per camera
+    - sempre le stesse per la stessa stereo camera (dipendono solo da differenza degli intrinseci e rototranslation tra le due camere)
+  - cerchiamo le corrispondenze nella coppia rettificata
 
 ---
 
@@ -252,7 +261,8 @@ We may wish to **find where a certain pixel does project into another image take
 
 Bisogna conoscere la rototranslation verso la nuova posizione:
 
-- sappiamo già da stereo calibration che questa può essere stimata con stereo calibration mostrando la stessa calibration image
+- sappiamo già da stereo calibration che questa può essere stimata mostrando a entrambe le camere la stessa calibration image
+  - la rototranslation si ottiene come prodotto tra $G_r G_l^{-1}$
 - se si conosce la rototranslation, le formule sono facili:
   - prima trasformo il pixel nella prima immagine in un punto 3d relativo al CRF della prima posizione con la formula appena discussa sopra
     - lifting the pixels

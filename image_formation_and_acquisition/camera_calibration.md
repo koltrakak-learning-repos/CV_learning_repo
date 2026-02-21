@@ -389,19 +389,39 @@ we should always aim to have a subpixel mean reprojection error
 # Riassumendo
 
 1. Utilizzando una calibration image e un corner detector, otteniamo n immagini di calibrazione, ognuna con m corrispondenze
+    - la scacchiera che usiamo per calibrare ha un numero di corner asimmetrico, in questo modo riusciamo a costruire correttametne le corrispondenze senza ambiguità
+
 2. ogni immagine di calibrazione ci permette di stimare un'omografia
+    - potremmo provare a risolvere direttamete il sistema km~ = Hw~
+      - il k però ci da fastidio e quindi passiamo per DLT in cui costruiamo un sistema Ah = 0
+      - A è una matrice 3\*9 (con solo due righe linearmente indipendenti) mentre h è un vettore colonna 9\*1
     - ogni punto ci da due equazioni e quindi risolviamo un sistema 2m*9 con SVD che ci da una soluzione h\* che minimizza lo square error del sistema
+
 3. raffiniamo i parametri delle n omografie stimate, minimizzando il reprojection error
-4. data un omografia, riusciamo a fattorizzarla e a rimuovere i parametri estrinseci, ottenendo 2 equazioni in cui le incognite sono data da A e il resto sono termini noti dell'omografia
+
+4. Ottenute le omografie, a noi interessa recuperare gli intrinseci, gli estrinseci e i parametri di distorsion; dato che con solo le omografie siamo limitati a mapping tra scene planari
+    - data un omografia, riusciamo a fattorizzarla e a rimuovere i parametri estrinseci, ottenendo 2 equazioni in cui le incognite sono data da A e il resto sono termini noti dell'omografia
+      - ricorda che H = \[h1, h2, h3\] = \[p1, p2, p4\] = lambda A \[r1, r2, T\]
+      - da qui possiamo costruire delle equazioni in cui a sinistra si ha uno dei due vettori di rotazione (per questo due equazioni per omografia) e a destra il resto (A, h1, ...)
+      - possiamo poi utilizzare delle proprietà dei vettori di rotazione per eliminarli dalle equazioni, ottenendo le equazion finali che dipendono solo da h e in cui le incognite sono i parametri di A
+    - da n calibration images (con n > 3) otteniamo altrettante omografie
     - abbiamo bisogno di calcolare 6 incognite e quindi utilizziamo tutte le n omografie che abbiamo calcolato per costruire un sistema 2n*6 che risolviamo di nuovo con SVD
-    - da qui notiamo che abbiamo bisogno di almeno 3 immagini di calibrazione
+      - da qui notiamo che abbiamo bisogno di almeno 3 immagini di calibrazione
+      - le usiamo tutte n per ottenere una stima più robusta al rumore degli intrinseci
+    - possiamo utilizzare equazioni provenienti da omografie diverse dato che la camera, e quindi gli intrinseci, rimangono uguali da omografia a omografia
+    - in realtà risolvendo il sistema 2n*6 otteniamo dei parametri di un'altra matrice B, ma da cui si può ricavare A facilmente
+
 5. data H e A, è facile calcolare R e T considerando le fattorizzazioni di H fatte prima
+    - basta fare delle formule inverse con: H = \[h1, h2, h3\] = \[p1, p2, p4\] = lambda A \[r1, r2, T\]
+      - r3 si ottiene come prodotto vettoriale di r1 e r2
     - siccome abbiamo un WRF per immagine di calibrazione, ne possiamo scegliere uno qualunque come WRF globale
+
 6. data H e A possiamo, possiamo stimare i parametri della lense distortion (radiale) k1, k2 in questo modo:
     - siccome abbiamo solo distorted e undistorted pixel coordinates, applichiamo digitalizzazione alle coordinate continue per capire come ottenere delle espressioni che dipendono solamente da pixel coordinates da inserire nel modello di lense distortion
     - le undistorted pixel coordinates sono quelle che otteniamo applicando l'omografia ai 3d coordinates, un'approssimazione
     - a questo punto, dal modello della lense distortion è immediato sostituire le espressioni trovate e applicare una formula inversa per ottenere 2 equazioni in due incognite
     - siccome la lente è sempre la stessa, otteniamo una stima più robusta utilizzando tutti i control point in tutte le immagini per ottenere un sistema 2mn*2 che risolviamo con SVD
+
 7. Come nel punto 3d, facciamo un raffinamento finale in cui minimizziamo il reprojection error che si ottiene applicando una PPM (non un'omografia che vale solo con scene planari) costruita con tutti i parametri che abbiamo stimato
     - il raffinamento viene fatto tramite discese del gradiente e cose simili
     - non posso fare da subito discesa del gradiente, altrimenti finisco in un minimo locale pessimo. Ho bisogno delle stime iniziali per avere uno starting point buono
