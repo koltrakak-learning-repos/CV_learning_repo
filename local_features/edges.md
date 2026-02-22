@@ -1,13 +1,28 @@
+why study local features?
+
 **Segmentation can be applied when object of interest and background are clearly diverse!**
 
-- in this cases the objects in the image can be segmented out and analyzed
+- in these cases the objects in the image can be segmented out and analyzed
 
-But in many applications this is not true! What do we do then?
+But in many applications this is not true, thus there is no way to detect the objects through segmentation.
 
-- rely on local features directly extracted from the input gray-scale/colour image!
-  - with edges we can compute contours of objects and fill them in
+- major nuisances: brightness/colour variations across objects, uneven lighting, occlusions, ...
+
+What do we do then?
+
+Rely on local features directly extracted from the input gray-scale/colour image!
+
 - local features are special **points in the image that convey some information**
   - i'm guessing they're called local because the features are computed looking at the neighbourhood
+
+For example:
+
+- if we want to detect an object (like a book)
+  - there's no way we could do segmentation because the book has many colors, and the background could be similar in intensity
+  - instead, we can try to find the local features of the book in the image (that act like a fingerprint)
+- if we want to segment out objects, with edges we can compute contours of objects and fill them in
+
+Whenever segmantation fails, the next step is trying local features to achieve our CV task (detection, bounding box computation (with template), counting, baricentre computation, blob analysis in general)
 
 # Edges
 
@@ -184,11 +199,15 @@ manca un gaussian filter iniziale per rimuovere il rumore
 
 # Riassumendo
 
-segmentation may fail when the environment isn't super controlled (intensities / colors aren't that much different)
+segmentation may fail when the environment isn't super controlled
+
+- intensities / colors aren't that much different
+- occlusions
+- lighting changes
 
 in these cases relying on local features like edges can still allow us to achieve our goal of extracting information from an image
 
-- es. measurements
+- es. detection, counting, measurements, ..., blobl analysis
 
 Edges are pixel that are in between uniform regions of the image of different intensities
 
@@ -206,7 +225,7 @@ When computing the derivatives of the gradient we have to be careful of noise
 We can get rid of noise and compute the derivatives in one step with a smooth derivative
 
 - this is a filter that does a Difference of means
-- the means are performed in the direction to differentiation so edges aren't blurred
+- the means are performed in the direction orthogonal to differentiation so edges aren't blurred
 - Sobel filter
 
 After computing the gradient we need to find the peaks of this function, the local maxima
@@ -227,5 +246,5 @@ Canny edge detector is basically a gaussian filter that removes noise and then c
 Canny uses smart thresholding
 
 - it uses two thresholds, a high one and a low one
-- pixels higher than the lowe threshold are considered edges if they are connected to pixel edges that are higher than the high one
+- pixels higher than the low threshold are considered edges if they are connected to pixel edges that are higher than the high one
 - this deals with edge streaking even when lighting is very uneven

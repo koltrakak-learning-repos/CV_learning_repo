@@ -8,7 +8,8 @@ Una feature è scale-invariant quando, la medesima istanza si riesce a trovare i
 
 **NB**: being a corner or not depends not only on the structure of the image, but also on its scale!
 
-- different images may have the same corner present at different scales, using the same size window for all images, sometimes this point could be classified as a corner and sometimes not
+- different images may have the same corner present at different scales
+- using the same size window for all images, sometimes this point could be classified as a corner and sometimes not
 
 **The use of a fixed-size detection window makes it impossible to repeatably detect homologous keypoints when they appear at different scales in images.**
 
@@ -219,11 +220,22 @@ However, it neither includes any criterion to detect features nor to select thei
 - features exist across a range of scales within the Gussian Scale-Space
 - but where are they in this 3d-space? and what height (sigma/scale) should we choose?
 
-The LoG and DoG filters (detectors) answer the previous question
+It was shown that we can detect features across scales by finding extrema of (scale-normalized) derivatives of the Gaussian Scale-Space
+
+- scale normalized = moltiplicazione per sigma^2
+- bisogna normalizzare dato che più applichiamo smoothing più le derivate diventano deboli, di conseguenza a scale alte dobbiamo compensare
+
+The LoG and DoG filters (detectors) answer the previous question more practically:
 
 - they produce a stack of filtered images at different scales (once again a 3d space)
 - the features are the extrema in this stack (answer to feature detection)
 - it was shown that corresponding features in different images (which are typically found at different coordinates in this 3d space) have a sigma proportional to the scale of the feature in the image, and their ratio is also similar to the ration of the scales of the features. Thus sigma can truly be thought as the cahracteristic scale of the feature (answer to scale selection)
+
+DoG is more computationally efficient than log
+
+- with DoG we can reuse the gaussian filtered images of an octave to compute the DoG images of the next octave (by downsampling)
+  - whereas with LoG dovrei applicare un filtro per ogni scala (forse posso fare downsampling dell'immagine di input per non incrementare la dimensione del kernel, tuttavia la convoluzione la devo fare)
+- with DoG i already have at my disposal the stack of gaussian filtered images that i will use to compute the desricptor of the found keypoints (at their characteristic scale)
 
 After finding these extrema, we prune the weak ones with a threshold beacause they aren't repeatable (they can't be found in other images)
 
@@ -248,13 +260,16 @@ Once each keypoint has been extracted, **the surrounding patch is considered to 
 - this is another reason why DoG is more practical than LoG, **we already have the gaussian filtered images to compute the descriptors with**
 - **we compute the descriptor at its scale**, in this way the same feature in different images will have a similar descriptor (**scale invariant descriptor**)
   - the patch is taken from the stack image (L(x,y,sigma)) that correspond to its characteristic scale.
-  - **NB**: siccome con DoG ogni ottava subisce un downsampling, questo implementa anche la dynamic-window size necessaria affinchè il descriptor della stessa feature in immagini diverse veda più o meno gli stessi pixel
+  - **NB**: siccome con DoG ogni ottava subisce un downsampling, questo implementa anche la dynamic-window size necessaria affinchè il descriptor della stessa feature in immagini diverse veda più o meno gli stessi pixel (lo stesso discorso vale anche con LoG ma li dovrei computare lo stack di gaussian filtered images)
 - this is because we need the right amount of smoothing to make features similar in different images at different scales
 
 What about rotation invariance?
 
 - we need to take into account the reference frame
 - to achieve rotation invariance **we need to make the descriptors reason with a reference frame that is oriented with the keypoint**
+  - pensa all'esempio al rettangolo con una zona chiara ed una scura con un keypoint in mezzo.
+  - Il descriptor originale considererà una regione perfettamente divisa a metà
+  - mentre, se il rettangolo è ruotato, il descriptor considererà una divisione sbilenca -> descriptor diverso
 - we can't use a global reference frame
 
 To attain rotation invariance, a canonical (aka characteristic) patch orientation is computed, so that the descriptor can then be computed on a canonically-oriented patch (that is equal in different images).
@@ -400,3 +415,5 @@ A questo punto il matching diventa un NN-problem
 - aggiungiamo una threshold alla distanza massima che un match può avere, altrimenti tutti i punti avrebber un match anche quando nell'altra immagine quel salient point non esiste
 - non consideriamo una threshold assoluta ma piuttosto una relativa tra d_nn e d_2nn
 - vogliamo che d_nn / d_2nn sia sufficentemente piccolo dato che vogliamo che il nn sia nettamente migliore del secondo, in questo modo non si ha ambiguità
+- infine, per velocizzare il mathing, per ogni keypoint non calcoliamo la distanza con tutti gli altri keypoint dell'altra immagine, poiuttosto utilizziamo delle indexing tecniche che approssimano il matching (possono produrre match sbagliati) ma che lo velocizzano incredibilmente.
+  - poco male con RANSAC
