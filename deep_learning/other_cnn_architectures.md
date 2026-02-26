@@ -52,8 +52,10 @@ How is a residual network realized in practice?
 
 The basic building block (residual layer) is a residual block
 
-- it's composed of a bunch of simpler layer that contain the weights of the resiudal layer
+- it's composed of a bunch of simpler layers that contain the weights of the residual layer
 - and the skip connection
+
+![residual_block](img/residual_block.png)
 
 Residual networks are stacks of residual blocks
 
@@ -116,8 +118,10 @@ guarda slide 38
 why do the activations get smaller and deeper?
 
 - smaller because we want to recognize global (complex) features composed of more local features detected in the earlier layers
-- this is the idea of **hierarchy of features**
+  - the filters in the deeper layers have larger receptive fields than those in the shallower ones
+- this is the idea of **hierarchy of features**: as we move towards deeper layers, filters gain the ability to detect larger patterns, i.e. more global features
   - the early layers detect features like: edges, corners, blobs
+    - small patterns because of small receptive field
   - the middle layers detect object parts composed of basic features
   - the late layers detect objects composed of object parts
     - ricorda che every channel records the presence of a certain kind of feature

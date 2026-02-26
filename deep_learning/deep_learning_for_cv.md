@@ -238,6 +238,7 @@ The general pattern, as we move throug conv layer to conv layer, is that:
 - while the depth increases
   - we consider more features
   - there aren't as many local features (edges, corners, ...) as there are global features (eye, mouth, ...)
+    - with a larger receptive field there are more interesting patterns
 
 We flatten the final activations and process them with one or more **FC layers**
 
@@ -355,9 +356,11 @@ it also showed how to build deep networks with a very **regular design**
 Idea of **stages**: a chain of layers that process activations at the same spatial resolution (stessa dimensione dell'input)
 
 - (conv-conv-pool, conv-conv-conv-pool and conv-conv-conv-conv-pool)
-- stesso motivo di alexnet
-- potremmo utilizzare un'unica convoluzione con un receptive field più grande...
-- ... ma, così facendo, abbiamo meno parametri, FLOPs e introduciamo più non linearità
+  - stesso motivo di alexnet
+  - potremmo utilizzare un'unica convoluzione con un receptive field più grande...
+  - ... ma, così facendo, abbiamo meno parametri, FLOPs e introduciamo più non linearità
+- we build a network by stacking stages
+- after a bunch of stages we have some FC layers
 
 VGG-16 -> 16 numero di learnable layers
 VGG-19 -> ha 19 learnable layers
@@ -383,3 +386,10 @@ Ha senso
 - abbiamo detto che gli FC layers hanno un ruolo di ricombinazione delle feature globali detected alla fine dei layer convoluzionali
   - globali perchè gli ultimi conv layer hanno un receptive field grande
 - **ci interessa solo la presenza o meno delle feature globali**, non tanto dove siano
+  - perdere l'informazione spaziale non ci interessa per le feature globali
+  - l'informazione spaziale è utile per arrivare alle feature globali
+    - se devo riconoscere un volto umano, voglio 2 occhi sopra un naso che sono sopra ad una bocca
+    - questo significa che il filtro che riconosce i volti umani dorà:
+      - pesare molto in alto il canale di input relativo agli occhi
+      - dovrà pesare molto in mezzo il canale di input relativo al naso
+      - dovrà pesare molto in basso il canale di input relativo alla bocca

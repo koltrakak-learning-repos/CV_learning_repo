@@ -467,27 +467,32 @@ with deep learning the machine learning model learns:
 
 deep learning ~= representation learning
 
-in deep learning we don't learn the representation in a single step, **we learn a higherarchy of representations**
-
 ## The importance of non linear functions
 
-chaining linear transformations results in another linear transformation
+in deep learning we don't learn the representation in a single step, **we learn a higherarchy of representations**
+
+- we start by learning simple features in early layers, that by using these simple features, we learn more complex and powerful features in late layers
+
+Chaining linear transformations results in another linear transformation
 
 - we could chain 1000 linear transformations and we wouldn't be able to do anything better than a single one
 - the same  result could've been achieved with a single linear transfomration
+- **this means that linear transformation don't allow us to learn powerful features**
 
 ![non linear transformations](img/non-linear_transformations.md)
 
 **NB**: to be able to transform the features EFFECTIVELY (in a way that makes the learned features linearly separable) we need to be able to use non-linear functions inside the transformation layers
 
 - this enables powerful representation learning
-- (passare da coordinate cartesiani a polari è stata una trasformazione non-lineare)
+  - in un singolo layer possiamo imparare delle feature interessanti ma semplici
+  - (passare da coordinate cartesiani a polari è stata una trasformazione non-lineare)
+  - sfruttando le feature semplici possiamo produrre delle feature più complesse
 
 ## Neural networks
 
 Chiamiamo X la dimensione dell'input e Y la dimensione dell'output
 
-Le dimensioni dei vari layer intermedi (hidded), e quindi dei vettori di attivazione, sono iperparametri
+Le dimensioni dei vari layer intermedi (hidden), e quindi dei vettori di attivazione, sono iperparametri
 
 Abbiamo una matrice di pesi in mezzo ad ogni coppia di layer
 
@@ -526,3 +531,40 @@ it is striking to discover that a NN with just one non-linear (hidden) can appro
 
 - facciamo solo delle matmul
 - the higher the dimension of the hidden layer, the better the approximation
+
+---
+
+# Riassumendo
+
+- we need machine learning for CV problems with a high variability
+  - image classification
+  - image segmentation
+- we learn through optimization of the parameters of our model minimizing the loss on the training set
+  - the loss is a measure of how well the model is performing on the training set
+    - computed by summing per-sample losses
+  - the test set is used as a proxy for real world images to evaluate of well the model is going to perform when deployed (generalization)
+- we have to be careful of overfitting
+  - we use the accuracy on the validation set as a signal of overfitting
+    - this allows us to estimate hyperparameters
+      - we test a configuration after training and we keep the configuration with best validation accuracy
+  - model capacity and size of the dataset are the two primary ways to control overfitting
+  - usually we start with a big model that can (over)fit the data well, and then we apply regularization
+    - loss-penalty term
+    - data augmentation
+- A loss measures the discrepancy between the predctions on the training set and the correct labels
+  - with gradient descent we can optimize the loss and find parameters that give us good predictions (on the training set)
+  - we use SGD with minibatches so we don't have to process the whole training set to compute a single update
+    - possibile dato che la loss viene espressa come somma di persample losses e quindi i gradienti dei singoli esempi si possono sommare
+  - introduciamo learning rate come iperparametro dato che il gradiente è un'informazione locale e fare salti troppo grandi ne annulla la validità
+  - at the end of each epoch we compute the validation accuracy, if it starts to degrade or stays still for a while, we stop training (early stopping)
+- during training we use softmax to transform the output scores into a probability distribution
+  - probability of the classes given the input
+- with softmax we use crossentropy loss
+  - just a -log(s); with s being the predicted probability of the model for the class of the label
+  - the full crossentropy loss is the sum of the persample losses
+- non-linear functions are fundemental to learn good features
+  - linear classifiers do template matching, thus they can't learn intra-class variability
+  - by adding non-linearities we can learn good features
+    - (pensa a esempio coordinate polari)
+  - we can then learn better and better features by organizing our model in layers that combine the previously learned (non-linear) features to produce new more complex ones
+  - after learning a hierarchy of features, linear classification is more easily doable in the learned feature space
