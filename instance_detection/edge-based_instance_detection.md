@@ -1,7 +1,7 @@
 A volte, è più appropriato usare solamente degli edges per fare instance detection di un oggetto
 
-- es: pezzi meccanici con la stessa texture ma contour diversi
-- l'informazione è data dal countour dell'oggetto non dalla sua texture che è simili agli altri
+- es: devo distinguere tra pezzi meccanici con la stessa texture ma con forme diverse
+- l'informazione è data dalla forma dell'oggetto non dalla sua texture (che potrebbe essere simile ad altri)
 
 Consideriamo due metodi:
 
